@@ -4,14 +4,6 @@ import Login from "./Login";
 import AutoResponse from "./AutoResponse";
 import "./App.css";
 
-// --- Helpers ---
-function canView(section: string, role: string) {
-  if (role === "admin") return true;
-  if (section === "support") return role === "support";
-  if (section === "accounts") return role === "accounts";
-  if (["sales", "leads", "unlinked"].includes(section)) return role === "sales";
-  return false;
-}
 function AccessDenied() {
   return (
     <div style={{ padding: 70, textAlign: "center", fontSize: 22, color: "#e2001a" }}>
