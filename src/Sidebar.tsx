@@ -1,6 +1,6 @@
 import vinetLogo from "./assets/logo.jpeg"; // Use your logo asset
 
-export default function Sidebar({
+export default function Sidebar(props) ({
   selected, onSelect, darkMode, colors, user, search, setSearch, onDarkMode,
 }: any) {
   return (
