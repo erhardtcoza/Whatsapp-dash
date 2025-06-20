@@ -522,7 +522,67 @@ function App() {
                     lineHeight: 1.5,
                   }}
                 >
-                  <div>{msg.body}</div>
+                  <div>
+                    {msg.body}
+                  </div>
+
+                  {/* Media Preview */}
+                  {msg.media_url && (
+                    <div style={{ marginTop: 10 }}>
+                      {/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.media_url) ? (
+                        <img
+                          src={msg.media_url}
+                          alt="media"
+                          style={{ maxWidth: 180, maxHeight: 180, borderRadius: 8, marginTop: 4, boxShadow: "0 2px 12px #bbb4" }}
+                        />
+                      ) : (
+                        <a
+                          href={msg.media_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "#007bff",
+                            fontWeight: "bold",
+                            display: "inline-block",
+                            marginTop: 4,
+                            background: "#fff",
+                            padding: "6px 14px",
+                            borderRadius: 5,
+                            textDecoration: "none",
+                            border: "1px solid #e2001a",
+                          }}
+                        >
+                          📄 View File
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Location Preview */}
+                  {msg.location_json && (() => {
+                    try {
+                      const loc = JSON.parse(msg.location_json);
+                      return loc && loc.latitude && loc.longitude ? (
+                        <div style={{ marginTop: 10 }}>
+                          <a
+                            href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#007bff",
+                              textDecoration: "underline",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            📍 View Location
+                          </a>
+                        </div>
+                      ) : null;
+                    } catch {
+                      return null;
+                    }
+                  })()}
+
                   <div
                     style={{
                       fontSize: 12,
