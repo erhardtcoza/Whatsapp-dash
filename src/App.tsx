@@ -36,6 +36,13 @@ async function setTag(from_number: string, tag: string) {
     body: JSON.stringify({ from_number, tag }),
   });
 }
+async function updateCustomer(phone: string, name: string, customer_id: string, email: string) {
+  await fetch(`${API_BASE}/api/update-customer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, name, customer_id, email }),
+  });
+}
 
 function App() {
   const [chats, setChats] = useState<any[]>([]);
@@ -47,6 +54,13 @@ function App() {
   const [sending, setSending] = useState(false);
   const [currentTag, setCurrentTag] = useState("lead");
   const [tagLoading, setTagLoading] = useState(false);
+
+  // For Edit Lead modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editCode, setEditCode] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   // Load chats on mount or after returning from a chat
   useEffect(() => {
@@ -117,6 +131,27 @@ function App() {
     );
   };
 
+  // Handle Edit Lead submit
+  const handleEditLead = async (e: any) => {
+    e.preventDefault();
+    setEditSaving(true);
+    await updateCustomer(selectedChat.from_number, editName, editCode, editEmail);
+    setEditSaving(false);
+    setEditOpen(false);
+    // Update UI
+    setSelectedChat((prev: any) => ({
+      ...prev,
+      name: editName,
+      customer_id: editCode,
+      email: editEmail
+    }));
+    setChats((prev) => prev.map(c =>
+      c.from_number === selectedChat.from_number
+        ? { ...c, name: editName }
+        : c
+    ));
+  };
+
   return (
     <div
       className="App"
@@ -129,6 +164,45 @@ function App() {
         minHeight: "100vh",
       }}
     >
+      {/* Edit Lead Modal */}
+      {editOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 30,
+          background: "rgba(30,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 16, padding: 30, minWidth: 350, boxShadow: "0 2px 16px rgba(0,0,0,0.16)"
+          }}>
+            <h2 style={{ color: "#e2001a", marginBottom: 24, fontWeight: 800 }}>Edit Lead Details</h2>
+            <form onSubmit={handleEditLead}>
+              <label>Name<br />
+                <input value={editName} onChange={e => setEditName(e.target.value)}
+                  required minLength={2} maxLength={40}
+                  style={{ width: "100%", fontSize: 16, marginBottom: 16, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <label>Client Code<br />
+                <input value={editCode} onChange={e => setEditCode(e.target.value)}
+                  required minLength={2} maxLength={30}
+                  style={{ width: "100%", fontSize: 16, marginBottom: 16, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <label>Email<br />
+                <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
+                  required maxLength={60}
+                  style={{ width: "100%", fontSize: 16, marginBottom: 22, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={() => setEditOpen(false)}
+                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#eee", fontWeight: "bold" }}>Cancel</button>
+                <button type="submit"
+                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#28a745", color: "#fff", fontWeight: "bold" }}
+                  disabled={editSaving}
+                >{editSaving ? "Saving..." : "Save"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <header
         style={{
           display: "flex",
@@ -366,6 +440,30 @@ function App() {
                   ))}
                 </select>
                 {tagLoading && <span style={{ marginLeft: 10, color: "#e2001a" }}>Updating...</span>}
+                {/* Edit Lead button (only for leads/unverified) */}
+                {(!selectedChat.name || selectedChat.tag === "lead" || selectedChat.tag === "unverified") && (
+                  <button
+                    style={{
+                      background: "#28a745",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "10px 20px",
+                      fontWeight: "bold",
+                      marginLeft: 20,
+                      fontSize: 15,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setEditOpen(true);
+                      setEditName(selectedChat.name || "");
+                      setEditEmail(selectedChat.email || "");
+                      setEditCode(selectedChat.customer_id || "");
+                    }}
+                  >
+                    Edit Lead
+                  </button>
+                )}
                 {/* Close Chat button */}
                 <button
                   style={{
