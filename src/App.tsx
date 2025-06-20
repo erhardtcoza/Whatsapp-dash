@@ -9,6 +9,7 @@ const TAGS = [
   { label: "Sales", value: "sales", color: "#28a745" },
   { label: "Lead", value: "lead", color: "#e2001a" },
   { label: "Unverified", value: "unverified", color: "#888" },
+  { label: "Closed", value: "closed", color: "#888" },
 ];
 
 async function getChats() {
@@ -64,7 +65,6 @@ function App() {
       setMessages(data);
       setLoadingMsgs(false);
     });
-    // Set current tag for the chat
     setCurrentTag(selectedChat.tag || "lead");
   }, [selectedChat]);
 
@@ -89,7 +89,6 @@ function App() {
     await setTag(selectedChat.from_number, newTag);
     setCurrentTag(newTag);
     setTagLoading(false);
-    // Update chat tag in chat list
     setChats((prev) =>
       prev.map((chat) =>
         chat.from_number === selectedChat.from_number
@@ -97,9 +96,24 @@ function App() {
           : chat
       )
     );
-    // Update selected chat's tag
     setSelectedChat((prev: any) =>
       prev ? { ...prev, tag: newTag } : prev
+    );
+  };
+
+  // Handle close chat
+  const handleCloseChat = async () => {
+    setTagLoading(true);
+    await setTag(selectedChat.from_number, "closed");
+    setCurrentTag("closed");
+    setTagLoading(false);
+    setSelectedChat(null);
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.from_number === selectedChat.from_number
+          ? { ...chat, tag: "closed" }
+          : chat
+      )
     );
   };
 
@@ -166,7 +180,7 @@ function App() {
               </div>
             )}
             <div style={{ width: "100%", maxWidth: 540, margin: "0 auto" }}>
-              {chats.map((chat) => (
+              {chats.filter(chat => chat.tag !== "closed").map((chat) => (
                 <div
                   key={chat.from_number}
                   onClick={() => setSelectedChat(chat)}
@@ -352,6 +366,24 @@ function App() {
                   ))}
                 </select>
                 {tagLoading && <span style={{ marginLeft: 10, color: "#e2001a" }}>Updating...</span>}
+                {/* Close Chat button */}
+                <button
+                  style={{
+                    background: "#888",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 20px",
+                    fontWeight: "bold",
+                    marginLeft: 20,
+                    fontSize: 15,
+                    cursor: "pointer",
+                  }}
+                  disabled={tagLoading || currentTag === "closed"}
+                  onClick={handleCloseChat}
+                >
+                  Close Chat
+                </button>
               </div>
             </div>
             <div
