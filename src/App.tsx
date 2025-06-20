@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import "./App.css";
 
@@ -9,9 +9,7 @@ async function getChats() {
   return res.json();
 }
 async function getMessages(phone: string) {
-  const res = await fetch(
-    `${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`
-  );
+  const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
   return res.json();
 }
 async function sendMessage(phone: string, body: string) {
@@ -21,13 +19,7 @@ async function sendMessage(phone: string, body: string) {
     body: JSON.stringify({ phone, body }),
   });
 }
-async function updateCustomer(
-  phone: string,
-  name: string,
-  customer_id: string,
-  email: string,
-  tag?: string
-) {
+async function updateCustomer(phone: string, name: string, customer_id: string, email: string, tag?: string) {
   await fetch(`${API_BASE}/api/update-customer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -35,11 +27,14 @@ async function updateCustomer(
   });
 }
 
-function App() {
+export default function App() {
+  // Set document title once
+  useEffect(() => {
+    document.title = "Vinet WhatsApp Portal";
+  }, []);
+
   // Dark mode
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem("wa-dark") === "1"
-  );
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
   useEffect(() => {
     if (darkMode) {
       document.body.style.background = "#1a1d22";
@@ -50,10 +45,11 @@ function App() {
     }
   }, [darkMode]);
 
-  // Navigation state
+  // Navigation/menu state
   const [section, setSection] = useState("chats");
+  const [search, setSearch] = useState("");
 
-  // Chat and table data
+  // Chat data
   const [chats, setChats] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -61,7 +57,7 @@ function App() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [reply, setReply] = useState("");
 
-  // "Add New Lead" modal state
+  // "Add New Lead" modal
   const [modalOpen, setModalOpen] = useState(false);
   const [leadPhone, setLeadPhone] = useState("");
   const [leadName, setLeadName] = useState("");
@@ -72,24 +68,14 @@ function App() {
   const [leadSaving, setLeadSaving] = useState(false);
   const [leadErr, setLeadErr] = useState("");
 
-  // Search bar
-  const [search, setSearch] = useState("");
-
-  // Refresh chat list on section change
+  // Load chats on section change
   useEffect(() => {
-    if (
-      section === "chats" ||
-      section === "sales" ||
-      section === "accounts" ||
-      section === "support"
-    ) {
-      setLoadingChats(true);
-      getChats().then((data) => {
-        setChats(data);
-        setLoadingChats(false);
-      });
-      setSelectedChat(null);
-    }
+    setLoadingChats(true);
+    getChats().then((data) => {
+      setChats(data);
+      setLoadingChats(false);
+    });
+    setSelectedChat(null);
   }, [section]);
 
   // Load messages when chat selected
@@ -102,70 +88,41 @@ function App() {
     });
   }, [selectedChat]);
 
-  // Search filter
+  // Counters for open tickets per department
+  const counts = useMemo(() => {
+    const isOpen = (c: any) => (c.tag !== "closed" && c.tag !== "unverified" && c.tag !== "lead");
+    return {
+      sales: chats.filter(c => c.tag === "sales" && isOpen(c)).length,
+      accounts: chats.filter(c => c.tag === "accounts" && isOpen(c)).length,
+      support: chats.filter(c => c.tag === "support" && isOpen(c)).length,
+    };
+  }, [chats]);
+
+  // Filter chats by menu section and search
   let filteredChats = chats.filter((c) => {
     const searchStr = search.toLowerCase();
-    return (
+    const base =
       (!searchStr ||
         c.from_number?.toLowerCase().includes(searchStr) ||
-        c.customer_id?.toLowerCase().includes(searchStr) ||
-        c.email?.toLowerCase().includes(searchStr)) &&
-      (section === "chats" ||
-        (section === "sales" && c.tag === "sales") ||
-        (section === "accounts" && c.tag === "accounts") ||
-        (section === "support" && c.tag === "support"))
-    );
+        (c.customer_id && String(c.customer_id).toLowerCase().includes(searchStr)) ||
+        (c.email && c.email.toLowerCase().includes(searchStr)));
+    switch (section) {
+      case "sales":
+        return base && c.tag === "sales";
+      case "accounts":
+        return base && c.tag === "accounts";
+      case "support":
+        return base && c.tag === "support";
+      case "unlinked":
+        return base && (!c.customer_id || c.customer_id === "—" || c.tag === "unverified");
+      case "leads":
+        return base && (c.tag === "lead" || c.tag === "unverified");
+      default:
+        return base;
+    }
   });
 
-  // Add New Lead (modal)
-  const handleAddLead = async (e: any) => {
-    e.preventDefault();
-    setLeadSaving(true);
-    setLeadErr("");
-    if (!/^[0-9]{8,16}$/.test(leadPhone)) {
-      setLeadErr("Enter valid phone number");
-      setLeadSaving(false);
-      return;
-    }
-    try {
-      await updateCustomer(
-        leadPhone,
-        leadName,
-        leadCode,
-        leadEmail,
-        leadType
-      );
-      await sendMessage(leadPhone, leadBody);
-      setModalOpen(false);
-      setTimeout(
-        () =>
-          getChats().then((data) => {
-            setChats(data);
-          }),
-        600
-      );
-      setLeadPhone("");
-      setLeadName("");
-      setLeadCode("");
-      setLeadEmail("");
-      setLeadBody("");
-      setLeadType("lead");
-    } catch {
-      setLeadErr("Failed to create lead");
-    }
-    setLeadSaving(false);
-  };
-
-  // Send reply in chat
-  const handleSend = async (e: any) => {
-    e.preventDefault();
-    if (!reply.trim() || !selectedChat) return;
-    await sendMessage(selectedChat.from_number, reply);
-    setReply("");
-    getMessages(selectedChat.from_number).then((data) => setMessages(data));
-  };
-
-  // Color palettes
+  // Colors for light/dark mode
   const c = darkMode
     ? {
         bg: "#1a1d22",
@@ -208,55 +165,90 @@ function App() {
         msgOut: "#e2001a",
       };
 
+  // Add New Lead (modal)
+  const handleAddLead = async (e: any) => {
+    e.preventDefault();
+    setLeadSaving(true);
+    setLeadErr("");
+    if (!/^[0-9]{8,16}$/.test(leadPhone)) {
+      setLeadErr("Enter valid phone number");
+      setLeadSaving(false);
+      return;
+    }
+    try {
+      await updateCustomer(leadPhone, leadName, leadCode, leadEmail, leadType);
+      await sendMessage(leadPhone, leadBody);
+      setModalOpen(false);
+      setTimeout(
+        () =>
+          getChats().then((data) => {
+            setChats(data);
+          }),
+        600
+      );
+      setLeadPhone("");
+      setLeadName("");
+      setLeadCode("");
+      setLeadEmail("");
+      setLeadBody("");
+      setLeadType("lead");
+    } catch {
+      setLeadErr("Failed to create lead");
+    }
+    setLeadSaving(false);
+  };
+
+  // Send reply in chat
+  const handleSend = async (e: any) => {
+    e.preventDefault();
+    if (!reply.trim() || !selectedChat) return;
+    await sendMessage(selectedChat.from_number, reply);
+    setReply("");
+    getMessages(selectedChat.from_number).then((data) => setMessages(data));
+  };
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
-      <Sidebar selected={section} onSelect={setSection} darkMode={darkMode} colors={c} />
+      <Sidebar
+        selected={section}
+        onSelect={setSection}
+        darkMode={darkMode}
+        colors={c}
+        counts={counts}
+        search={search}
+        setSearch={setSearch}
+        onDarkMode={() => setDarkMode((d) => !d)}
+      />
 
       <div style={{ flex: 1, marginLeft: 205 }}>
-        {/* Topbar: section title, search, add-lead, dark toggle */}
-        <div
-          style={{
-            padding: "18px 32px 10px 32px",
-            borderBottom: `2px solid ${c.red}`,
-            background: c.card,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
-          <span
+        {/* Top bar for non-sidebar pages */}
+        {(section === "chats" ||
+          section === "sales" ||
+          section === "accounts" ||
+          section === "support" ||
+          section === "leads" ||
+          section === "unlinked") && (
+          <div
             style={{
-              fontWeight: 700,
-              fontSize: 24,
-              color: c.red,
-              letterSpacing: 1,
+              padding: "18px 32px 10px 32px",
+              borderBottom: `2px solid ${c.red}`,
+              background: c.card,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
             }}
           >
-            {section[0].toUpperCase() + section.slice(1)}
-          </span>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-end" }}>
-            {(section === "chats" ||
-              section === "sales" ||
-              section === "accounts" ||
-              section === "support") && (
-              <input
-                type="search"
-                placeholder="Search number, ID or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  minWidth: 240,
-                  fontSize: 15,
-                  border: `1.5px solid ${c.border}`,
-                  borderRadius: 6,
-                  padding: "8px 13px",
-                  marginRight: 16,
-                  background: c.input,
-                  color: c.inputText,
-                }}
-              />
-            )}
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: 24,
+                color: c.red,
+                letterSpacing: 1,
+              }}
+            >
+              {section[0].toUpperCase() + section.slice(1).replace(/^\w/, (m) => m.toUpperCase())}
+            </span>
             {(section === "chats" || section === "leads") && (
               <button
                 onClick={() => setModalOpen(true)}
@@ -274,22 +266,8 @@ function App() {
                 Add New Lead
               </button>
             )}
-            <button
-              onClick={() => setDarkMode((d) => !d)}
-              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              style={{
-                marginLeft: 15,
-                background: "none",
-                border: "none",
-                fontSize: 24,
-                color: c.text,
-                cursor: "pointer",
-              }}
-            >
-              {darkMode ? "🌙" : "☀️"}
-            </button>
           </div>
-        </div>
+        )}
 
         {/* Modal for Add New Lead */}
         {modalOpen && (
@@ -512,44 +490,13 @@ function App() {
           </div>
         )}
 
-        {/* Broadcast page */}
-        {section === "broadcast" && (
-          <div
-            style={{
-              marginTop: 34,
-              maxWidth: 580,
-              background: c.card,
-              padding: 38,
-              borderRadius: 12,
-              marginLeft: "auto",
-              marginRight: "auto",
-              boxShadow: "0 1px 12px #0001",
-              color: c.text,
-            }}
-          >
-            <h2
-              style={{
-                color: c.red,
-                fontWeight: 900,
-                fontSize: 26,
-                marginBottom: 28,
-              }}
-            >
-              Send Broadcast
-            </h2>
-            <div style={{ color: c.sub, fontSize: 16 }}>
-              <i>
-                Coming soon: send bulk messages by tag/group, with WhatsApp rate limit protection.
-              </i>
-            </div>
-          </div>
-        )}
-
-        {/* Table (chats/sales/accounts/support) */}
+        {/* Table of chats */}
         {(section === "chats" ||
           section === "sales" ||
           section === "accounts" ||
-          section === "support") &&
+          section === "support" ||
+          section === "leads" ||
+          section === "unlinked") &&
           !selectedChat && (
             <div
               style={{
@@ -664,7 +611,9 @@ function App() {
         {(section === "chats" ||
           section === "sales" ||
           section === "accounts" ||
-          section === "support") &&
+          section === "support" ||
+          section === "leads" ||
+          section === "unlinked") &&
           selectedChat && (
             <div
               style={{
@@ -817,7 +766,6 @@ function App() {
   );
 }
 
-// Dense cell/header
 const td = {
   padding: "6px 12px",
   fontSize: 15,
@@ -832,7 +780,6 @@ const th = {
   border: "none",
 } as const;
 
-// Tag display
 function Tag({ tag, c }: { tag: string; c: any }) {
   const colorMap: any = {
     support: "#1890ff",
@@ -862,5 +809,3 @@ function Tag({ tag, c }: { tag: string; c: any }) {
     </span>
   );
 }
-
-export default App;
