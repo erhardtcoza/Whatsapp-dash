@@ -54,6 +54,7 @@ function App() {
   const [sending, setSending] = useState(false);
   const [currentTag, setCurrentTag] = useState("lead");
   const [tagLoading, setTagLoading] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
 
   // For Edit Lead modal
   const [editOpen, setEditOpen] = useState(false);
@@ -147,7 +148,7 @@ function App() {
     }));
     setChats((prev) => prev.map(c =>
       c.from_number === selectedChat.from_number
-        ? { ...c, name: editName }
+        ? { ...c, name: editName, customer_id: editCode }
         : c
     ));
   };
@@ -243,6 +244,25 @@ function App() {
             >
               Recent Chats
             </h2>
+            {/* Toggle closed chats */}
+            <div style={{ textAlign: "center", marginBottom: 14 }}>
+              <button
+                style={{
+                  padding: "8px 24px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: showClosed ? "#28a745" : "#888",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  fontSize: 17,
+                  margin: 0,
+                  cursor: "pointer",
+                }}
+                onClick={() => setShowClosed((x) => !x)}
+              >
+                {showClosed ? "Hide Closed Chats" : "View Closed Chats"}
+              </button>
+            </div>
             {loadingChats && (
               <div style={{ textAlign: "center", color: "#888", margin: 40 }}>
                 Loading chats...
@@ -254,126 +274,140 @@ function App() {
               </div>
             )}
             <div style={{ width: "100%", maxWidth: 540, margin: "0 auto" }}>
-              {chats.filter(chat => chat.tag !== "closed").map((chat) => (
-                <div
-                  key={chat.from_number}
-                  onClick={() => setSelectedChat(chat)}
-                  style={{
-                    padding: "28px 36px",
-                    borderBottom: "1.5px solid #f2f2f2",
-                    cursor: "pointer",
-                    background: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 30,
-                    transition: "background 0.2s",
-                    borderRadius: 12,
-                    marginBottom: 8,
-                    boxShadow:
-                      "0 1px 2px 0 rgba(210,0,26,0.01), 0 0.5px 1px 0 rgba(210,0,26,0.04)",
-                  }}
-                  onMouseOver={e =>
-                    (e.currentTarget.style.background = "#f8f8f8")
-                  }
-                  onMouseOut={e =>
-                    (e.currentTarget.style.background = "#fff")
-                  }
-                >
+              {chats
+                .filter(chat => showClosed ? chat.tag === "closed" : chat.tag !== "closed")
+                .map((chat) => (
                   <div
+                    key={chat.from_number}
+                    onClick={() => setSelectedChat(chat)}
                     style={{
-                      width: 60,
-                      height: 60,
-                      background: "#f7f7f7",
-                      borderRadius: 30,
+                      padding: "28px 36px",
+                      borderBottom: "1.5px solid #f2f2f2",
+                      cursor: "pointer",
+                      background: "#fff",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      color: "#e2001a",
-                      fontWeight: "bold",
-                      fontSize: 28,
-                      border: "2.5px solid #e2001a",
-                      position: "relative",
+                      gap: 30,
+                      transition: "background 0.2s",
+                      borderRadius: 12,
+                      marginBottom: 8,
+                      boxShadow:
+                        "0 1px 2px 0 rgba(210,0,26,0.01), 0 0.5px 1px 0 rgba(210,0,26,0.04)",
                     }}
+                    onMouseOver={e =>
+                      (e.currentTarget.style.background = "#f8f8f8")
+                    }
+                    onMouseOut={e =>
+                      (e.currentTarget.style.background = "#fff")
+                    }
                   >
-                    {chat.name
-                      ? chat.name[0].toUpperCase()
-                      : <span style={{ color: "#e2001a", fontSize: 30 }}>?</span>}
-                    {/* Tag badge */}
-                    <span style={{
-                      position: "absolute",
-                      bottom: 2,
-                      right: 2,
-                      width: 18,
-                      height: 18,
-                      background: TAGS.find(t => t.value === chat.tag)?.color || "#888",
-                      color: "#fff",
-                      borderRadius: "50%",
-                      fontSize: 13,
-                      fontWeight: "bold",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: "1.5px solid #fff",
-                      boxShadow: "0 0 4px rgba(0,0,0,0.04)",
-                    }}>
-                      {TAGS.find(t => t.value === chat.tag)?.label[0] || "?"}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1 }}>
                     <div
                       style={{
-                        fontWeight: 700,
-                        fontSize: 22,
-                        marginBottom: 4,
-                        color: "#223",
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      {chat.name || "Lead"}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 16,
-                        color: "#2a3745",
-                        marginBottom: 3,
-                        letterSpacing: 0.2,
-                        fontWeight: 400,
-                        opacity: 0.65,
-                      }}
-                    >
-                      {chat.from_number}
-                    </div>
-                    <div
-                      style={{
-                        color: "#b22a2a",
-                        fontSize: 15,
-                        opacity: 0.84,
-                        whiteSpace: "nowrap",
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                        maxWidth: 250,
-                      }}
-                    >
-                      {chat.last_message}
-                    </div>
-                  </div>
-                  {chat.unread_count > 0 && (
-                    <div
-                      style={{
-                        background: "#e2001a",
-                        color: "#fff",
-                        borderRadius: 22,
-                        padding: "6px 18px",
-                        fontSize: 20,
+                        width: 60,
+                        height: 60,
+                        background: "#f7f7f7",
+                        borderRadius: 30,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#e2001a",
                         fontWeight: "bold",
-                        marginLeft: 5,
+                        fontSize: 28,
+                        border: "2.5px solid #e2001a",
+                        position: "relative",
                       }}
                     >
-                      {chat.unread_count}
+                      {chat.name
+                        ? chat.name[0].toUpperCase()
+                        : <span style={{ color: "#e2001a", fontSize: 30 }}>?</span>}
+                      {/* Tag badge */}
+                      <span style={{
+                        position: "absolute",
+                        bottom: 2,
+                        right: 2,
+                        width: 18,
+                        height: 18,
+                        background: TAGS.find(t => t.value === chat.tag)?.color || "#888",
+                        color: "#fff",
+                        borderRadius: "50%",
+                        fontSize: 13,
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1.5px solid #fff",
+                        boxShadow: "0 0 4px rgba(0,0,0,0.04)",
+                      }}>
+                        {TAGS.find(t => t.value === chat.tag)?.label[0] || "?"}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 22,
+                          marginBottom: 4,
+                          color: "#223",
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        {chat.name || "Lead"}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 16,
+                          color: "#2a3745",
+                          marginBottom: 3,
+                          letterSpacing: 0.2,
+                          fontWeight: 400,
+                          opacity: 0.65,
+                        }}
+                      >
+                        {chat.from_number}
+                        {chat.customer_id && (
+                          <span style={{
+                            fontSize: 16,
+                            color: "#007bff",
+                            opacity: 0.82,
+                            marginLeft: 12,
+                            fontWeight: "bold",
+                            marginTop: 2,
+                          }}>
+                            [ID: {chat.customer_id}]
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          color: "#b22a2a",
+                          fontSize: 15,
+                          opacity: 0.84,
+                          whiteSpace: "nowrap",
+                          textOverflow: "ellipsis",
+                          overflow: "hidden",
+                          maxWidth: 250,
+                        }}
+                      >
+                        {chat.last_message}
+                      </div>
+                    </div>
+                    {chat.unread_count > 0 && (
+                      <div
+                        style={{
+                          background: "#e2001a",
+                          color: "#fff",
+                          borderRadius: 22,
+                          padding: "6px 18px",
+                          fontSize: 20,
+                          fontWeight: "bold",
+                          marginLeft: 5,
+                        }}
+                      >
+                        {chat.unread_count}
+                      </div>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         ) : (
@@ -416,6 +450,20 @@ function App() {
               >
                 {selectedChat.from_number}
               </span>
+              {selectedChat.customer_id && (
+                <span
+                  style={{
+                    fontSize: 16,
+                    color: "#007bff",
+                    opacity: 0.82,
+                    marginLeft: 16,
+                    fontWeight: "bold",
+                    marginTop: 4,
+                  }}
+                >
+                  [ID: {selectedChat.customer_id}]
+                </span>
+              )}
               {/* Tag selector */}
               <div style={{ marginLeft: 18 }}>
                 <label style={{ marginRight: 8, fontWeight: 600 }}>Tag:</label>
