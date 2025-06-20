@@ -45,6 +45,7 @@ async function updateCustomer(phone: string, name: string, customer_id: string, 
 }
 
 function App() {
+  // --- Main chat and UI state ---
   const [chats, setChats] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -56,12 +57,22 @@ function App() {
   const [tagLoading, setTagLoading] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
 
-  // For Edit Lead modal
+  // --- Edit Lead modal state ---
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editCode, setEditCode] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  // --- New Chat modal state ---
+  const [newChatOpen, setNewChatOpen] = useState(false);
+  const [newPhone, setNewPhone] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newCode, setNewCode] = useState("");
+  const [newBody, setNewBody] = useState("");
+  const [newChatSaving, setNewChatSaving] = useState(false);
+  const [newChatError, setNewChatError] = useState("");
 
   // Load chats on mount or after returning from a chat
   useEffect(() => {
@@ -153,6 +164,33 @@ function App() {
     ));
   };
 
+  // --- New Chat modal submit ---
+  const handleNewChat = async (e: any) => {
+    e.preventDefault();
+    setNewChatSaving(true);
+    setNewChatError("");
+    // Validate phone
+    if (!/^[0-9]{8,16}$/.test(newPhone)) {
+      setNewChatError("Enter a valid phone number (digits only, include country code)");
+      setNewChatSaving(false);
+      return;
+    }
+    try {
+      // Upsert customer
+      await updateCustomer(newPhone, newName, newCode, newEmail);
+      // Send message
+      await sendMessage(newPhone, newBody);
+      setNewChatOpen(false);
+      // Reset state
+      setNewPhone(""); setNewName(""); setNewCode(""); setNewEmail(""); setNewBody(""); setNewChatError("");
+      // Refresh chat list after short delay
+      setTimeout(() => getChats().then((data) => setChats(data)), 600);
+    } catch (err) {
+      setNewChatError("Failed to send message.");
+    }
+    setNewChatSaving(false);
+  };
+
   return (
     <div
       className="App"
@@ -165,7 +203,64 @@ function App() {
         minHeight: "100vh",
       }}
     >
-      {/* Edit Lead Modal */}
+      {/* --- New Chat Modal --- */}
+      {newChatOpen && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 40,
+          background: "rgba(30,0,0,0.32)", display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 16, padding: 30, minWidth: 350, boxShadow: "0 2px 18px rgba(0,0,0,0.18)"
+          }}>
+            <h2 style={{ color: "#e2001a", marginBottom: 24, fontWeight: 800 }}>Start New Chat</h2>
+            <form onSubmit={handleNewChat}>
+              <label>Phone number (with country code)<br />
+                <input value={newPhone} onChange={e => setNewPhone(e.target.value.replace(/\D/g, ""))}
+                  required minLength={8} maxLength={16}
+                  placeholder="27821234567"
+                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <label>Name<br />
+                <input value={newName} onChange={e => setNewName(e.target.value)}
+                  required minLength={2} maxLength={40}
+                  placeholder="Full Name"
+                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <label>Client Code<br />
+                <input value={newCode} onChange={e => setNewCode(e.target.value)}
+                  required minLength={2} maxLength={30}
+                  placeholder="Client ID"
+                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <label>Email<br />
+                <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                  required maxLength={60}
+                  placeholder="email@domain.com"
+                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
+              </label>
+              <label>Message<br />
+                <textarea value={newBody} onChange={e => setNewBody(e.target.value)}
+                  required minLength={1} maxLength={500}
+                  placeholder="Type your message here..."
+                  style={{ width: "100%", fontSize: 16, marginBottom: 20, padding: 8, borderRadius: 5, border: "1px solid #ccc", minHeight: 60 }} />
+              </label>
+              {newChatError && (
+                <div style={{ color: "#e2001a", marginBottom: 12 }}>{newChatError}</div>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button type="button" onClick={() => setNewChatOpen(false)}
+                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#eee", fontWeight: "bold" }}>Cancel</button>
+                <button type="submit"
+                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#e2001a", color: "#fff", fontWeight: "bold" }}
+                  disabled={newChatSaving}
+                >{newChatSaving ? "Sending..." : "Send"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- Edit Lead Modal --- */}
       {editOpen && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 30,
@@ -244,8 +339,24 @@ function App() {
             >
               Recent Chats
             </h2>
-            {/* Toggle closed chats */}
-            <div style={{ textAlign: "center", marginBottom: 14 }}>
+            {/* --- New Chat Button --- */}
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <button
+                style={{
+                  padding: "8px 26px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#e2001a",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  fontSize: 17,
+                  margin: "0 12px",
+                  cursor: "pointer",
+                }}
+                onClick={() => setNewChatOpen(true)}
+              >
+                New Chat
+              </button>
               <button
                 style={{
                   padding: "8px 24px",
@@ -255,7 +366,7 @@ function App() {
                   color: "#fff",
                   fontWeight: "bold",
                   fontSize: 17,
-                  margin: 0,
+                  margin: "0 12px",
                   cursor: "pointer",
                 }}
                 onClick={() => setShowClosed((x) => !x)}
