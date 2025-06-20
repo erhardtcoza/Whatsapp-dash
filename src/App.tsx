@@ -36,6 +36,20 @@ async function updateCustomer(
 }
 
 function App() {
+  // Dark mode
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem("wa-dark") === "1"
+  );
+  useEffect(() => {
+    if (darkMode) {
+      document.body.style.background = "#1a1d22";
+      localStorage.setItem("wa-dark", "1");
+    } else {
+      document.body.style.background = "#f7f7fa";
+      localStorage.setItem("wa-dark", "0");
+    }
+  }, [darkMode]);
+
   // Navigation state
   const [section, setSection] = useState("chats");
 
@@ -151,17 +165,60 @@ function App() {
     getMessages(selectedChat.from_number).then((data) => setMessages(data));
   };
 
+  // Color palettes
+  const c = darkMode
+    ? {
+        bg: "#1a1d22",
+        card: "#23262b",
+        border: "#23262b",
+        text: "#f6f7fa",
+        sub: "#bfc1c7",
+        red: "#e2001a",
+        sidebar: "#23262b",
+        sidebarSel: "#e2001a",
+        sidebarTxt: "#fff",
+        input: "#262931",
+        inputText: "#fff",
+        th: "#ccd0da",
+        td: "#eee",
+        badge: "#e2001a",
+        tag: "#555",
+        tagTxt: "#fff",
+        msgIn: "#262931",
+        msgOut: "#e2001a",
+      }
+    : {
+        bg: "#f7f7fa",
+        card: "#fff",
+        border: "#eaeaea",
+        text: "#23262b",
+        sub: "#555",
+        red: "#e2001a",
+        sidebar: "#f7f7fa",
+        sidebarSel: "#e2001a",
+        sidebarTxt: "#23262b",
+        input: "#fff",
+        inputText: "#23262b",
+        th: "#555",
+        td: "#223",
+        badge: "#e2001a",
+        tag: "#888",
+        tagTxt: "#fff",
+        msgIn: "#fff",
+        msgOut: "#e2001a",
+      };
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f7f7fa" }}>
-      <Sidebar selected={section} onSelect={setSection} />
+    <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
+      <Sidebar selected={section} onSelect={setSection} darkMode={darkMode} colors={c} />
 
       <div style={{ flex: 1, marginLeft: 205 }}>
-        {/* Topbar: section title, search, add-lead */}
+        {/* Topbar: section title, search, add-lead, dark toggle */}
         <div
           style={{
             padding: "18px 32px 10px 32px",
-            borderBottom: "2px solid #e2001a",
-            background: "#fff",
+            borderBottom: `2px solid ${c.red}`,
+            background: c.card,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -172,48 +229,66 @@ function App() {
             style={{
               fontWeight: 700,
               fontSize: 24,
-              color: "#e2001a",
+              color: c.red,
               letterSpacing: 1,
             }}
           >
             {section[0].toUpperCase() + section.slice(1)}
           </span>
-          {(section === "chats" ||
-            section === "sales" ||
-            section === "accounts" ||
-            section === "support") && (
-            <input
-              type="search"
-              placeholder="Search number, ID or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                minWidth: 240,
-                fontSize: 15,
-                border: "1.5px solid #eee",
-                borderRadius: 6,
-                padding: "8px 13px",
-                marginRight: 16,
-              }}
-            />
-          )}
-          {(section === "chats" || section === "leads") && (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-end" }}>
+            {(section === "chats" ||
+              section === "sales" ||
+              section === "accounts" ||
+              section === "support") && (
+              <input
+                type="search"
+                placeholder="Search number, ID or email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  minWidth: 240,
+                  fontSize: 15,
+                  border: `1.5px solid ${c.border}`,
+                  borderRadius: 6,
+                  padding: "8px 13px",
+                  marginRight: 16,
+                  background: c.input,
+                  color: c.inputText,
+                }}
+              />
+            )}
+            {(section === "chats" || section === "leads") && (
+              <button
+                onClick={() => setModalOpen(true)}
+                style={{
+                  background: c.red,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 24px",
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  cursor: "pointer",
+                }}
+              >
+                Add New Lead
+              </button>
+            )}
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => setDarkMode((d) => !d)}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               style={{
-                background: "#e2001a",
-                color: "#fff",
+                marginLeft: 15,
+                background: "none",
                 border: "none",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontWeight: "bold",
-                fontSize: 16,
+                fontSize: 24,
+                color: c.text,
                 cursor: "pointer",
               }}
             >
-              Add New Lead
+              {darkMode ? "🌙" : "☀️"}
             </button>
-          )}
+          </div>
         </div>
 
         {/* Modal for Add New Lead */}
@@ -226,7 +301,9 @@ function App() {
               top: 0,
               width: "100vw",
               height: "100vh",
-              background: "rgba(30,0,0,0.28)",
+              background: darkMode
+                ? "rgba(18,18,18,0.40)"
+                : "rgba(30,0,0,0.28)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -234,16 +311,17 @@ function App() {
           >
             <div
               style={{
-                background: "#fff",
+                background: c.card,
                 borderRadius: 18,
                 padding: 36,
                 minWidth: 380,
-                boxShadow: "0 2px 18px rgba(0,0,0,0.16)",
+                boxShadow: "0 2px 18px rgba(0,0,0,0.20)",
+                color: c.text,
               }}
             >
               <h2
                 style={{
-                  color: "#e2001a",
+                  color: c.red,
                   marginBottom: 25,
                   fontWeight: 800,
                   textAlign: "center",
@@ -255,7 +333,7 @@ function App() {
               </h2>
               <form onSubmit={handleAddLead}>
                 <label>
-                  <div style={{ fontWeight: 500, color: "#223", marginBottom: 2 }}>
+                  <div style={{ fontWeight: 500, color: c.text, marginBottom: 2 }}>
                     Phone number (with country code)
                   </div>
                   <input
@@ -271,12 +349,14 @@ function App() {
                       marginBottom: 12,
                       padding: 8,
                       borderRadius: 5,
-                      border: "1px solid #ccc",
+                      border: `1px solid ${c.border}`,
+                      background: c.input,
+                      color: c.inputText,
                     }}
                   />
                 </label>
                 <label>
-                  <div style={{ fontWeight: 500, color: "#223", marginBottom: 2 }}>Name</div>
+                  <div style={{ fontWeight: 500, color: c.text, marginBottom: 2 }}>Name</div>
                   <input
                     value={leadName}
                     onChange={(e) => setLeadName(e.target.value)}
@@ -290,12 +370,14 @@ function App() {
                       marginBottom: 12,
                       padding: 8,
                       borderRadius: 5,
-                      border: "1px solid #ccc",
+                      border: `1px solid ${c.border}`,
+                      background: c.input,
+                      color: c.inputText,
                     }}
                   />
                 </label>
                 <label>
-                  <div style={{ fontWeight: 500, color: "#223", marginBottom: 2 }}>
+                  <div style={{ fontWeight: 500, color: c.text, marginBottom: 2 }}>
                     Client Code
                   </div>
                   <input
@@ -311,12 +393,14 @@ function App() {
                       marginBottom: 12,
                       padding: 8,
                       borderRadius: 5,
-                      border: "1px solid #ccc",
+                      border: `1px solid ${c.border}`,
+                      background: c.input,
+                      color: c.inputText,
                     }}
                   />
                 </label>
                 <label>
-                  <div style={{ fontWeight: 500, color: "#223", marginBottom: 2 }}>Email</div>
+                  <div style={{ fontWeight: 500, color: c.text, marginBottom: 2 }}>Email</div>
                   <input
                     type="email"
                     value={leadEmail}
@@ -330,12 +414,14 @@ function App() {
                       marginBottom: 12,
                       padding: 8,
                       borderRadius: 5,
-                      border: "1px solid #ccc",
+                      border: `1px solid ${c.border}`,
+                      background: c.input,
+                      color: c.inputText,
                     }}
                   />
                 </label>
                 <label>
-                  <div style={{ fontWeight: 500, color: "#223", marginBottom: 2 }}>Type</div>
+                  <div style={{ fontWeight: 500, color: c.text, marginBottom: 2 }}>Type</div>
                   <select
                     value={leadType}
                     onChange={(e) => setLeadType(e.target.value)}
@@ -345,7 +431,9 @@ function App() {
                       marginBottom: 12,
                       padding: 8,
                       borderRadius: 5,
-                      border: "1px solid #ccc",
+                      border: `1px solid ${c.border}`,
+                      background: c.input,
+                      color: c.inputText,
                     }}
                   >
                     <option value="lead">Lead</option>
@@ -355,7 +443,7 @@ function App() {
                   </select>
                 </label>
                 <label>
-                  <div style={{ fontWeight: 500, color: "#223", marginBottom: 2 }}>
+                  <div style={{ fontWeight: 500, color: c.text, marginBottom: 2 }}>
                     Message
                   </div>
                   <textarea
@@ -371,13 +459,15 @@ function App() {
                       marginBottom: 18,
                       padding: 8,
                       borderRadius: 5,
-                      border: "1px solid #ccc",
+                      border: `1px solid ${c.border}`,
+                      background: c.input,
+                      color: c.inputText,
                       minHeight: 54,
                     }}
                   />
                 </label>
                 {leadErr && (
-                  <div style={{ color: "#e2001a", marginBottom: 14 }}>{leadErr}</div>
+                  <div style={{ color: c.red, marginBottom: 14 }}>{leadErr}</div>
                 )}
                 <div
                   style={{
@@ -393,7 +483,8 @@ function App() {
                       padding: "8px 22px",
                       borderRadius: 7,
                       border: "none",
-                      background: "#eee",
+                      background: c.input,
+                      color: c.inputText,
                       fontWeight: "bold",
                       fontSize: 15,
                     }}
@@ -407,7 +498,7 @@ function App() {
                       padding: "8px 22px",
                       borderRadius: 7,
                       border: "none",
-                      background: "#e2001a",
+                      background: c.red,
                       color: "#fff",
                       fontWeight: "bold",
                       fontSize: 15,
@@ -427,17 +518,18 @@ function App() {
             style={{
               marginTop: 34,
               maxWidth: 580,
-              background: "#fff",
+              background: c.card,
               padding: 38,
               borderRadius: 12,
               marginLeft: "auto",
               marginRight: "auto",
               boxShadow: "0 1px 12px #0001",
+              color: c.text,
             }}
           >
             <h2
               style={{
-                color: "#e2001a",
+                color: c.red,
                 fontWeight: 900,
                 fontSize: 26,
                 marginBottom: 28,
@@ -445,8 +537,10 @@ function App() {
             >
               Send Broadcast
             </h2>
-            <div style={{ color: "#888", fontSize: 16 }}>
-              <i>Coming soon: send bulk messages by tag/group, with WhatsApp rate limit protection.</i>
+            <div style={{ color: c.sub, fontSize: 16 }}>
+              <i>
+                Coming soon: send bulk messages by tag/group, with WhatsApp rate limit protection.
+              </i>
             </div>
           </div>
         )}
@@ -461,42 +555,44 @@ function App() {
               style={{
                 maxWidth: 830,
                 margin: "38px auto 0 auto",
-                background: "#fff",
+                background: c.card,
                 borderRadius: 16,
                 boxShadow: "0 2px 14px #0001",
                 padding: "0 0 10px 0",
+                color: c.text,
               }}
             >
               <table
                 style={{
                   width: "100%",
-                  background: "#fff",
+                  background: "transparent",
                   borderCollapse: "collapse",
                   borderRadius: 14,
                   overflow: "hidden",
+                  color: c.text,
                 }}
               >
-                <thead style={{ background: "#f8f8f8" }}>
+                <thead style={{ background: darkMode ? "#25282e" : "#f8f8f8" }}>
                   <tr style={{ height: 36 }}>
-                    <th style={th}>Name</th>
-                    <th style={th}>Number</th>
-                    <th style={th}>ID</th>
-                    <th style={th}>Tag</th>
-                    <th style={th}>Last Message</th>
-                    <th style={th}>Unread</th>
+                    <th style={{ ...th, color: c.th }}>Name</th>
+                    <th style={{ ...th, color: c.th }}>Number</th>
+                    <th style={{ ...th, color: c.th }}>ID</th>
+                    <th style={{ ...th, color: c.th }}>Tag</th>
+                    <th style={{ ...th, color: c.th }}>Last Message</th>
+                    <th style={{ ...th, color: c.th }}>Unread</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingChats && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: "center", color: "#888", padding: 20 }}>
+                      <td colSpan={6} style={{ textAlign: "center", color: c.sub, padding: 20 }}>
                         Loading...
                       </td>
                     </tr>
                   )}
                   {!loadingChats && filteredChats.length === 0 && (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: "center", color: "#888", padding: 20 }}>
+                      <td colSpan={6} style={{ textAlign: "center", color: c.sub, padding: 20 }}>
                         No chats found.
                       </td>
                     </tr>
@@ -506,27 +602,27 @@ function App() {
                       key={chat.from_number}
                       onClick={() => setSelectedChat(chat)}
                       style={{
-                        background: "#fff",
+                        background: "transparent",
                         cursor: "pointer",
                         height: 38,
-                        borderBottom: "1px solid #f2f2f2",
+                        borderBottom: `1px solid ${c.border}`,
                       }}
                       onMouseOver={(e) =>
-                        (e.currentTarget.style.background = "#f7f7fa")
+                        (e.currentTarget.style.background = darkMode
+                          ? "#23262b"
+                          : "#f7f7fa")
                       }
                       onMouseOut={(e) =>
-                        (e.currentTarget.style.background = "#fff")
+                        (e.currentTarget.style.background = "transparent")
                       }
                     >
-                      <td style={td}>
-                        {chat.name || <span style={{ color: "#e2001a" }}>Lead</span>}
-                      </td>
+                      <td style={td}>{chat.name || <span style={{ color: c.red }}>Lead</span>}</td>
                       <td style={td}>{chat.from_number}</td>
                       <td style={td}>
-                        {chat.customer_id || <span style={{ color: "#888" }}>—</span>}
+                        {chat.customer_id || <span style={{ color: c.sub }}>—</span>}
                       </td>
                       <td style={td}>
-                        <Tag tag={chat.tag} />
+                        <Tag tag={chat.tag} c={c} />
                       </td>
                       <td
                         style={{
@@ -544,7 +640,7 @@ function App() {
                           <span
                             style={{
                               display: "inline-block",
-                              background: "#e2001a",
+                              background: c.badge,
                               color: "#fff",
                               fontWeight: "bold",
                               borderRadius: 11,
@@ -574,16 +670,17 @@ function App() {
               style={{
                 maxWidth: 830,
                 margin: "38px auto 0 auto",
-                background: "#fff",
+                background: c.card,
                 borderRadius: 16,
                 boxShadow: "0 2px 14px #0001",
                 padding: "0 0 28px 0",
+                color: c.text,
               }}
             >
               <button
                 onClick={() => setSelectedChat(null)}
                 style={{
-                  background: "#e2001a",
+                  background: c.red,
                   color: "#fff",
                   border: "none",
                   borderRadius: 6,
@@ -599,13 +696,13 @@ function App() {
               <span style={{ fontWeight: 700, fontSize: 18, marginLeft: 16 }}>
                 {selectedChat.name || "Lead"}
               </span>
-              <span style={{ color: "#888", marginLeft: 16 }}>
+              <span style={{ color: c.sub, marginLeft: 16 }}>
                 {selectedChat.from_number}
               </span>
               {selectedChat.customer_id && (
                 <span
                   style={{
-                    color: "#007bff",
+                    color: "#37a0ff",
                     marginLeft: 14,
                     fontWeight: 600,
                   }}
@@ -614,7 +711,7 @@ function App() {
                 </span>
               )}
               <span style={{ marginLeft: 22 }}>
-                <Tag tag={selectedChat.tag} />
+                <Tag tag={selectedChat.tag} c={c} />
               </span>
               {/* Messages */}
               <div
@@ -622,18 +719,18 @@ function App() {
                   marginTop: 25,
                   marginBottom: 60,
                   padding: 18,
-                  background: "#f8f8f8",
+                  background: darkMode ? "#22242a" : "#f8f8f8",
                   borderRadius: 7,
                   minHeight: 200,
                 }}
               >
                 {loadingMsgs && (
-                  <div style={{ color: "#888", margin: "18px 0" }}>
+                  <div style={{ color: c.sub, margin: "18px 0" }}>
                     Loading messages...
                   </div>
                 )}
                 {!loadingMsgs && messages.length === 0 && (
-                  <div style={{ color: "#888", margin: "18px 0" }}>
+                  <div style={{ color: c.sub, margin: "18px 0" }}>
                     No messages yet.
                   </div>
                 )}
@@ -642,8 +739,15 @@ function App() {
                     key={msg.id}
                     style={{
                       background:
-                        msg.direction === "outgoing" ? "#e2001a" : "#fff",
-                      color: msg.direction === "outgoing" ? "#fff" : "#222",
+                        msg.direction === "outgoing"
+                          ? c.msgOut
+                          : c.msgIn,
+                      color:
+                        msg.direction === "outgoing"
+                          ? "#fff"
+                          : darkMode
+                          ? "#f7f7fa"
+                          : "#222",
                       borderRadius: 9,
                       padding: "10px 14px",
                       margin: "10px 0",
@@ -656,7 +760,7 @@ function App() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "#888",
+                        color: c.sub,
                         marginTop: 6,
                         textAlign: "right",
                       }}
@@ -683,16 +787,18 @@ function App() {
                   style={{
                     flex: 1,
                     borderRadius: 6,
-                    border: "1.5px solid #bbb",
+                    border: `1.5px solid ${c.border}`,
                     padding: "10px 16px",
                     fontSize: 16,
+                    background: c.input,
+                    color: c.inputText,
                   }}
                 />
                 <button
                   type="submit"
                   disabled={!reply.trim()}
                   style={{
-                    background: "#e2001a",
+                    background: c.red,
                     color: "#fff",
                     border: "none",
                     borderRadius: 6,
@@ -715,21 +821,19 @@ function App() {
 const td = {
   padding: "6px 12px",
   fontSize: 15,
-  color: "#223",
   verticalAlign: "middle",
   border: "none",
 } as const;
 const th = {
   padding: "7px 13px",
   fontSize: 14,
-  color: "#555",
   textAlign: "left",
   fontWeight: 700,
   border: "none",
 } as const;
 
 // Tag display
-function Tag({ tag }: { tag: string }) {
+function Tag({ tag, c }: { tag: string; c: any }) {
   const colorMap: any = {
     support: "#1890ff",
     accounts: "#ffc107",
@@ -737,14 +841,14 @@ function Tag({ tag }: { tag: string }) {
     lead: "#e2001a",
     closed: "#888",
     unverified: "#aaa",
-    customer: "#888",
+    customer: c.tag,
   };
   return (
     <span
       style={{
         display: "inline-block",
-        background: colorMap[tag] || "#aaa",
-        color: "#fff",
+        background: colorMap[tag] || c.tag,
+        color: c.tagTxt,
         fontWeight: 600,
         fontSize: 13,
         padding: "2px 12px",
