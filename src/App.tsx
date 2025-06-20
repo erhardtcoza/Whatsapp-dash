@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
+import Sidebar from "./Sidebar";
 import "./App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
-
-const TAGS = [
-  { label: "Support", value: "support", color: "#1890ff" },
-  { label: "Accounts", value: "accounts", color: "#ffc107" },
-  { label: "Sales", value: "sales", color: "#28a745" },
-  { label: "Lead", value: "lead", color: "#e2001a" },
-  { label: "Unverified", value: "unverified", color: "#888" },
-  { label: "Closed", value: "closed", color: "#888" },
-];
 
 async function getChats() {
   const res = await fetch(`${API_BASE}/api/chats`);
@@ -36,54 +28,27 @@ async function setTag(from_number: string, tag: string) {
     body: JSON.stringify({ from_number, tag }),
   });
 }
-async function updateCustomer(phone: string, name: string, customer_id: string, email: string) {
-  await fetch(`${API_BASE}/api/update-customer`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, name, customer_id, email }),
-  });
-}
 
 function App() {
-  // --- Main chat and UI state ---
+  const [section, setSection] = useState("chats");
   const [chats, setChats] = useState<any[]>([]);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [selectedChat, setSelectedChat] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [reply, setReply] = useState("");
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [currentTag, setCurrentTag] = useState("lead");
-  const [tagLoading, setTagLoading] = useState(false);
-  const [showClosed, setShowClosed] = useState(false);
 
-  // --- Edit Lead modal state ---
-  const [editOpen, setEditOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editCode, setEditCode] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-
-  // --- New Chat modal state ---
-  const [newChatOpen, setNewChatOpen] = useState(false);
-  const [newPhone, setNewPhone] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newCode, setNewCode] = useState("");
-  const [newBody, setNewBody] = useState("");
-  const [newChatSaving, setNewChatSaving] = useState(false);
-  const [newChatError, setNewChatError] = useState("");
-
-  // Load chats on mount or after returning from a chat
   useEffect(() => {
-    setLoadingChats(true);
-    getChats().then((data) => {
-      setChats(data);
-      setLoadingChats(false);
-    });
-  }, [selectedChat]);
+    if (section === "chats") {
+      setLoadingChats(true);
+      getChats().then((data) => {
+        setChats(data);
+        setLoadingChats(false);
+      });
+    }
+    setSelectedChat(null);
+  }, [section]);
 
-  // Load messages when a chat is selected
   useEffect(() => {
     if (!selectedChat) return;
     setLoadingMsgs(true);
@@ -91,722 +56,235 @@ function App() {
       setMessages(data);
       setLoadingMsgs(false);
     });
-    setCurrentTag(selectedChat.tag || "lead");
   }, [selectedChat]);
 
-  // Send a reply
   const handleSend = async (e: any) => {
     e.preventDefault();
     if (!reply.trim() || !selectedChat) return;
-    setSending(true);
     await sendMessage(selectedChat.from_number, reply);
     setReply("");
-    // Reload messages
     getMessages(selectedChat.from_number).then((data) => setMessages(data));
-    setSending(false);
-  };
-
-  // Handle tag change
-  const handleTagChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const newTag = e.target.value;
-    setTagLoading(true);
-    await setTag(selectedChat.from_number, newTag);
-    setCurrentTag(newTag);
-    setTagLoading(false);
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.from_number === selectedChat.from_number
-          ? { ...chat, tag: newTag }
-          : chat
-      )
-    );
-    setSelectedChat((prev: any) =>
-      prev ? { ...prev, tag: newTag } : prev
-    );
-  };
-
-  // Handle close chat
-  const handleCloseChat = async () => {
-    setTagLoading(true);
-    await setTag(selectedChat.from_number, "closed");
-    setCurrentTag("closed");
-    setTagLoading(false);
-    setSelectedChat(null);
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.from_number === selectedChat.from_number
-          ? { ...chat, tag: "closed" }
-          : chat
-      )
-    );
-  };
-
-  // Handle Edit Lead submit
-  const handleEditLead = async (e: any) => {
-    e.preventDefault();
-    setEditSaving(true);
-    await updateCustomer(selectedChat.from_number, editName, editCode, editEmail);
-    setEditSaving(false);
-    setEditOpen(false);
-    // Update UI
-    setSelectedChat((prev: any) => ({
-      ...prev,
-      name: editName,
-      customer_id: editCode,
-      email: editEmail
-    }));
-    setChats((prev) => prev.map(c =>
-      c.from_number === selectedChat.from_number
-        ? { ...c, name: editName, customer_id: editCode }
-        : c
-    ));
-  };
-
-  // --- New Chat modal submit ---
-  const handleNewChat = async (e: any) => {
-    e.preventDefault();
-    setNewChatSaving(true);
-    setNewChatError("");
-    // Validate phone
-    if (!/^[0-9]{8,16}$/.test(newPhone)) {
-      setNewChatError("Enter a valid phone number (digits only, include country code)");
-      setNewChatSaving(false);
-      return;
-    }
-    try {
-      // Upsert customer
-      await updateCustomer(newPhone, newName, newCode, newEmail);
-      // Send message
-      await sendMessage(newPhone, newBody);
-      setNewChatOpen(false);
-      // Reset state
-      setNewPhone(""); setNewName(""); setNewCode(""); setNewEmail(""); setNewBody(""); setNewChatError("");
-      // Refresh chat list after short delay
-      setTimeout(() => getChats().then((data) => setChats(data)), 600);
-    } catch (err) {
-      setNewChatError("Failed to send message.");
-    }
-    setNewChatSaving(false);
   };
 
   return (
-    <div
-      className="App"
-      style={{
-        fontFamily: "sans-serif",
-        maxWidth: 650,
-        margin: "0 auto",
-        padding: 0,
-        background: "#fff",
-        minHeight: "100vh",
-      }}
-    >
-      {/* --- New Chat Modal --- */}
-      {newChatOpen && (
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f7f7fa" }}>
+      <Sidebar selected={section} onSelect={setSection} />
+      <div style={{ flex: 1, marginLeft: 200 }}>
+        {/* Topbar */}
         <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 40,
-          background: "rgba(30,0,0,0.32)", display: "flex", alignItems: "center", justifyContent: "center"
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 16, padding: 30, minWidth: 350, boxShadow: "0 2px 18px rgba(0,0,0,0.18)"
-          }}>
-            <h2 style={{ color: "#e2001a", marginBottom: 24, fontWeight: 800 }}>Start New Chat</h2>
-            <form onSubmit={handleNewChat}>
-              <label>Phone number (with country code)<br />
-                <input value={newPhone} onChange={e => setNewPhone(e.target.value.replace(/\D/g, ""))}
-                  required minLength={8} maxLength={16}
-                  placeholder="27821234567"
-                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <label>Name<br />
-                <input value={newName} onChange={e => setNewName(e.target.value)}
-                  required minLength={2} maxLength={40}
-                  placeholder="Full Name"
-                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <label>Client Code<br />
-                <input value={newCode} onChange={e => setNewCode(e.target.value)}
-                  required minLength={2} maxLength={30}
-                  placeholder="Client ID"
-                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <label>Email<br />
-                <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
-                  required maxLength={60}
-                  placeholder="email@domain.com"
-                  style={{ width: "100%", fontSize: 16, marginBottom: 14, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <label>Message<br />
-                <textarea value={newBody} onChange={e => setNewBody(e.target.value)}
-                  required minLength={1} maxLength={500}
-                  placeholder="Type your message here..."
-                  style={{ width: "100%", fontSize: 16, marginBottom: 20, padding: 8, borderRadius: 5, border: "1px solid #ccc", minHeight: 60 }} />
-              </label>
-              {newChatError && (
-                <div style={{ color: "#e2001a", marginBottom: 12 }}>{newChatError}</div>
-              )}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button type="button" onClick={() => setNewChatOpen(false)}
-                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#eee", fontWeight: "bold" }}>Cancel</button>
-                <button type="submit"
-                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#e2001a", color: "#fff", fontWeight: "bold" }}
-                  disabled={newChatSaving}
-                >{newChatSaving ? "Sending..." : "Send"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- Edit Lead Modal --- */}
-      {editOpen && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 30,
-          background: "rgba(30,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center"
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 16, padding: 30, minWidth: 350, boxShadow: "0 2px 16px rgba(0,0,0,0.16)"
-          }}>
-            <h2 style={{ color: "#e2001a", marginBottom: 24, fontWeight: 800 }}>Edit Lead Details</h2>
-            <form onSubmit={handleEditLead}>
-              <label>Name<br />
-                <input value={editName} onChange={e => setEditName(e.target.value)}
-                  required minLength={2} maxLength={40}
-                  style={{ width: "100%", fontSize: 16, marginBottom: 16, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <label>Client Code<br />
-                <input value={editCode} onChange={e => setEditCode(e.target.value)}
-                  required minLength={2} maxLength={30}
-                  style={{ width: "100%", fontSize: 16, marginBottom: 16, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <label>Email<br />
-                <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
-                  required maxLength={60}
-                  style={{ width: "100%", fontSize: 16, marginBottom: 22, padding: 8, borderRadius: 5, border: "1px solid #ccc" }} />
-              </label>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button type="button" onClick={() => setEditOpen(false)}
-                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#eee", fontWeight: "bold" }}>Cancel</button>
-                <button type="submit"
-                  style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "#28a745", color: "#fff", fontWeight: "bold" }}
-                  disabled={editSaving}
-                >{editSaving ? "Saving..." : "Save"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <header
-        style={{
+          padding: "20px 32px 12px 32px",
+          borderBottom: "2px solid #e2001a",
+          background: "#fff",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "30px 10px 0 10px",
-          borderBottom: "3px solid #e2001a",
-        }}
-      >
-        <img
-          src="https://static.vinet.co.za/logo.jpeg"
-          alt="Vinet Logo"
-          style={{ height: 50, marginRight: 18 }}
-        />
-        <span
-          style={{
-            fontWeight: "bold",
-            fontSize: "2rem",
-            color: "#e2001a",
-            letterSpacing: 1,
-          }}
-        >
-          Vinet WhatsApp Admin Portal
-        </span>
-      </header>
-
-      <main style={{ marginTop: 32, padding: 0 }}>
-        {!selectedChat ? (
-          <div>
-            <h2
-              style={{
-                margin: "30px 0 24px",
-                textAlign: "center",
-                color: "#223",
-                fontSize: "2.3rem",
-                fontWeight: 700,
-              }}
-            >
-              Recent Chats
-            </h2>
-            {/* --- New Chat Button --- */}
-            <div style={{ textAlign: "center", marginBottom: 16 }}>
-              <button
-                style={{
-                  padding: "8px 26px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "#e2001a",
-                  color: "#fff",
-                  fontWeight: "bold",
-                  fontSize: 17,
-                  margin: "0 12px",
-                  cursor: "pointer",
-                }}
-                onClick={() => setNewChatOpen(true)}
-              >
-                New Chat
-              </button>
-              <button
-                style={{
-                  padding: "8px 24px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: showClosed ? "#28a745" : "#888",
-                  color: "#fff",
-                  fontWeight: "bold",
-                  fontSize: 17,
-                  margin: "0 12px",
-                  cursor: "pointer",
-                }}
-                onClick={() => setShowClosed((x) => !x)}
-              >
-                {showClosed ? "Hide Closed Chats" : "View Closed Chats"}
-              </button>
-            </div>
-            {loadingChats && (
-              <div style={{ textAlign: "center", color: "#888", margin: 40 }}>
-                Loading chats...
-              </div>
-            )}
-            {!loadingChats && chats.length === 0 && (
-              <div style={{ textAlign: "center", color: "#888", margin: 40 }}>
-                No chats yet.
-              </div>
-            )}
-            <div style={{ width: "100%", maxWidth: 540, margin: "0 auto" }}>
-              {chats
-                .filter(chat => showClosed ? chat.tag === "closed" : chat.tag !== "closed")
-                .map((chat) => (
-                  <div
-                    key={chat.from_number}
-                    onClick={() => setSelectedChat(chat)}
-                    style={{
-                      padding: "28px 36px",
-                      borderBottom: "1.5px solid #f2f2f2",
-                      cursor: "pointer",
-                      background: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 30,
-                      transition: "background 0.2s",
-                      borderRadius: 12,
-                      marginBottom: 8,
-                      boxShadow:
-                        "0 1px 2px 0 rgba(210,0,26,0.01), 0 0.5px 1px 0 rgba(210,0,26,0.04)",
-                    }}
-                    onMouseOver={e =>
-                      (e.currentTarget.style.background = "#f8f8f8")
-                    }
-                    onMouseOut={e =>
-                      (e.currentTarget.style.background = "#fff")
-                    }
-                  >
-                    <div
+          justifyContent: "space-between"
+        }}>
+          <span style={{ fontWeight: 700, fontSize: 24, color: "#e2001a", letterSpacing: 1 }}>
+            {section === "chats" ? "Recent Chats" : section[0].toUpperCase() + section.slice(1)}
+          </span>
+        </div>
+        {/* Main panel */}
+        <div style={{
+          padding: "0 22px 20px 22px",
+          maxWidth: 1180,
+          margin: "0 auto"
+        }}>
+          {section === "chats" && !selectedChat && (
+            <>
+              {/* Table header */}
+              <table style={{
+                width: "100%", background: "#fff", borderCollapse: "collapse",
+                marginTop: 28, boxShadow: "0 1px 6px #0001", borderRadius: 10, overflow: "hidden"
+              }}>
+                <thead style={{ background: "#f8f8f8" }}>
+                  <tr style={{ height: 36 }}>
+                    <th style={th}>Name</th>
+                    <th style={th}>Number</th>
+                    <th style={th}>ID</th>
+                    <th style={th}>Tag</th>
+                    <th style={th}>Last Message</th>
+                    <th style={th}>Unread</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingChats && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", color: "#888", padding: 20 }}>
+                        Loading...
+                      </td>
+                    </tr>
+                  )}
+                  {!loadingChats && chats.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", color: "#888", padding: 20 }}>
+                        No chats found.
+                      </td>
+                    </tr>
+                  )}
+                  {chats.map(chat => (
+                    <tr
+                      key={chat.from_number}
+                      onClick={() => setSelectedChat(chat)}
                       style={{
-                        width: 60,
-                        height: 60,
-                        background: "#f7f7f7",
-                        borderRadius: 30,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#e2001a",
-                        fontWeight: "bold",
-                        fontSize: 28,
-                        border: "2.5px solid #e2001a",
-                        position: "relative",
+                        background: "#fff",
+                        cursor: "pointer",
+                        height: 38,
+                        borderBottom: "1px solid #f2f2f2"
                       }}
+                      onMouseOver={e => (e.currentTarget.style.background = "#f7f7fa")}
+                      onMouseOut={e => (e.currentTarget.style.background = "#fff")}
                     >
-                      {chat.name
-                        ? chat.name[0].toUpperCase()
-                        : <span style={{ color: "#e2001a", fontSize: 30 }}>?</span>}
-                      {/* Tag badge */}
-                      <span style={{
-                        position: "absolute",
-                        bottom: 2,
-                        right: 2,
-                        width: 18,
-                        height: 18,
-                        background: TAGS.find(t => t.value === chat.tag)?.color || "#888",
-                        color: "#fff",
-                        borderRadius: "50%",
-                        fontSize: 13,
-                        fontWeight: "bold",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: "1.5px solid #fff",
-                        boxShadow: "0 0 4px rgba(0,0,0,0.04)",
-                      }}>
-                        {TAGS.find(t => t.value === chat.tag)?.label[0] || "?"}
-                      </span>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: 22,
-                          marginBottom: 4,
-                          color: "#223",
-                          letterSpacing: 0.5,
-                        }}
-                      >
-                        {chat.name || "Lead"}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 16,
-                          color: "#2a3745",
-                          marginBottom: 3,
-                          letterSpacing: 0.2,
-                          fontWeight: 400,
-                          opacity: 0.65,
-                        }}
-                      >
-                        {chat.from_number}
-                        {chat.customer_id && (
-                          <span style={{
-                            fontSize: 16,
-                            color: "#007bff",
-                            opacity: 0.82,
-                            marginLeft: 12,
-                            fontWeight: "bold",
-                            marginTop: 2,
-                          }}>
-                            [ID: {chat.customer_id}]
-                          </span>
-                        )}
-                      </div>
-                      <div
-                        style={{
-                          color: "#b22a2a",
-                          fontSize: 15,
-                          opacity: 0.84,
-                          whiteSpace: "nowrap",
-                          textOverflow: "ellipsis",
-                          overflow: "hidden",
-                          maxWidth: 250,
-                        }}
-                      >
+                      <td style={td}>{chat.name || <span style={{ color: "#e2001a" }}>Lead</span>}</td>
+                      <td style={td}>{chat.from_number}</td>
+                      <td style={td}>{chat.customer_id || <span style={{ color: "#888" }}>—</span>}</td>
+                      <td style={td}><Tag tag={chat.tag} /></td>
+                      <td style={{ ...td, maxWidth: 260, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                         {chat.last_message}
-                      </div>
-                    </div>
-                    {chat.unread_count > 0 && (
-                      <div
-                        style={{
+                      </td>
+                      <td style={td}>{chat.unread_count > 0 ? (
+                        <span style={{
+                          display: "inline-block",
                           background: "#e2001a",
                           color: "#fff",
-                          borderRadius: 22,
-                          padding: "6px 18px",
-                          fontSize: 20,
                           fontWeight: "bold",
-                          marginLeft: 5,
-                        }}
-                      >
-                        {chat.unread_count}
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 18,
-                margin: "25px 0 18px 0",
-              }}
-            >
+                          borderRadius: 11,
+                          minWidth: 25,
+                          fontSize: 13,
+                          textAlign: "center"
+                        }}>{chat.unread_count}</span>
+                      ) : null}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {/* Chat View */}
+          {section === "chats" && selectedChat && (
+            <div style={{ marginTop: 24 }}>
               <button
                 onClick={() => setSelectedChat(null)}
                 style={{
-                  background: "#e2001a",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 26px",
-                  fontWeight: "bold",
-                  fontSize: 18,
-                  cursor: "pointer",
-                  marginLeft: 15,
-                }}
-              >
-                ← Back
-              </button>
-              <span style={{ fontWeight: "bold", fontSize: 28, color: "#222" }}>
+                  background: "#e2001a", color: "#fff", border: "none",
+                  borderRadius: 6, padding: "6px 19px", fontWeight: 700, marginBottom: 16, fontSize: 15
+                }}>← Back</button>
+              <span style={{ fontWeight: 700, fontSize: 18, marginLeft: 16 }}>
                 {selectedChat.name || "Lead"}
               </span>
-              <span
+              <span style={{ color: "#888", marginLeft: 16 }}>{selectedChat.from_number}</span>
+              {selectedChat.customer_id && (
+                <span style={{ color: "#007bff", marginLeft: 14, fontWeight: 600 }}>[ID: {selectedChat.customer_id}]</span>
+              )}
+              <span style={{ marginLeft: 22 }}><Tag tag={selectedChat.tag} /></span>
+              {/* Messages */}
+              <div style={{ marginTop: 25, marginBottom: 60, padding: 18, background: "#f8f8f8", borderRadius: 7, minHeight: 200 }}>
+                {loadingMsgs && (
+                  <div style={{ color: "#888", margin: "18px 0" }}>Loading messages...</div>
+                )}
+                {!loadingMsgs && messages.length === 0 && (
+                  <div style={{ color: "#888", margin: "18px 0" }}>No messages yet.</div>
+                )}
+                {messages.map(msg => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      background: msg.direction === "outgoing" ? "#e2001a" : "#fff",
+                      color: msg.direction === "outgoing" ? "#fff" : "#222",
+                      borderRadius: 9,
+                      padding: "10px 14px",
+                      margin: "10px 0",
+                      maxWidth: 650,
+                      boxShadow: "0 1px 3px #0001",
+                      fontSize: 15
+                    }}>
+                    {msg.body}
+                    <div style={{
+                      fontSize: 12, color: "#888",
+                      marginTop: 6, textAlign: "right"
+                    }}>
+                      {new Date(Number(msg.timestamp)).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <form
+                onSubmit={handleSend}
                 style={{
-                  fontSize: 18,
-                  color: "#444",
-                  opacity: 0.6,
-                  marginLeft: 8,
-                  marginTop: 3,
+                  position: "fixed",
+                  left: 210,
+                  right: 0,
+                  bottom: 0,
+                  background: "#fff",
+                  borderTop: "1.5px solid #eee",
+                  display: "flex",
+                  gap: 10,
+                  padding: 12,
+                  maxWidth: 900,
+                  margin: "0 auto"
                 }}
               >
-                {selectedChat.from_number}
-              </span>
-              {selectedChat.customer_id && (
-                <span
+                <input
+                  value={reply}
+                  onChange={e => setReply(e.target.value)}
+                  placeholder="Type a reply…"
                   style={{
+                    flex: 1,
+                    borderRadius: 6,
+                    border: "1.5px solid #bbb",
+                    padding: "10px 16px",
                     fontSize: 16,
-                    color: "#007bff",
-                    opacity: 0.82,
-                    marginLeft: 16,
-                    fontWeight: "bold",
-                    marginTop: 4,
                   }}
-                >
-                  [ID: {selectedChat.customer_id}]
-                </span>
-              )}
-              {/* Tag selector */}
-              <div style={{ marginLeft: 18 }}>
-                <label style={{ marginRight: 8, fontWeight: 600 }}>Tag:</label>
-                <select
-                  value={currentTag}
-                  onChange={handleTagChange}
-                  disabled={tagLoading}
-                  style={{
-                    padding: "8px 18px",
-                    borderRadius: 8,
-                    border: `2px solid ${TAGS.find(t => t.value === currentTag)?.color || "#e2001a"}`,
-                    background: "#fff",
-                    color: TAGS.find(t => t.value === currentTag)?.color || "#e2001a",
-                    fontWeight: "bold",
-                    fontSize: 16
-                  }}
-                >
-                  {TAGS.map(tag => (
-                    <option key={tag.value} value={tag.value} style={{ color: tag.color }}>
-                      {tag.label}
-                    </option>
-                  ))}
-                </select>
-                {tagLoading && <span style={{ marginLeft: 10, color: "#e2001a" }}>Updating...</span>}
-                {/* Edit Lead button (only for leads/unverified) */}
-                {(!selectedChat.name || selectedChat.tag === "lead" || selectedChat.tag === "unverified") && (
-                  <button
-                    style={{
-                      background: "#28a745",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "10px 20px",
-                      fontWeight: "bold",
-                      marginLeft: 20,
-                      fontSize: 15,
-                      cursor: "pointer",
-                    }}
-                    onClick={() => {
-                      setEditOpen(true);
-                      setEditName(selectedChat.name || "");
-                      setEditEmail(selectedChat.email || "");
-                      setEditCode(selectedChat.customer_id || "");
-                    }}
-                  >
-                    Edit Lead
-                  </button>
-                )}
-                {/* Close Chat button */}
+                />
                 <button
+                  type="submit"
+                  disabled={!reply.trim()}
                   style={{
-                    background: "#888",
+                    background: "#e2001a",
                     color: "#fff",
                     border: "none",
-                    borderRadius: 8,
-                    padding: "10px 20px",
+                    borderRadius: 6,
+                    padding: "10px 26px",
                     fontWeight: "bold",
-                    marginLeft: 20,
-                    fontSize: 15,
-                    cursor: "pointer",
+                    fontSize: 16,
                   }}
-                  disabled={tagLoading || currentTag === "closed"}
-                  onClick={handleCloseChat}
-                >
-                  Close Chat
-                </button>
-              </div>
+                >Send</button>
+              </form>
             </div>
-            <div
-              style={{
-                paddingBottom: 120,
-                paddingLeft: 15,
-                paddingRight: 15,
-                maxWidth: 640,
-                margin: "0 auto",
-              }}
-            >
-              {loadingMsgs && (
-                <div style={{ color: "#888", margin: "20px 0" }}>
-                  Loading messages...
-                </div>
-              )}
-              {!loadingMsgs && messages.length === 0 && (
-                <div style={{ color: "#888", margin: "20px 0" }}>
-                  No messages yet.
-                </div>
-              )}
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  style={{
-                    maxWidth: "80%",
-                    margin:
-                      msg.direction === "outgoing"
-                        ? "18px 0 18px auto"
-                        : "18px auto 18px 0",
-                    background:
-                      msg.direction === "outgoing" ? "#e2001a" : "#f2f2f2",
-                    color: msg.direction === "outgoing" ? "#fff" : "#222",
-                    borderRadius: 18,
-                    padding: "16px 20px",
-                    boxShadow: "0 2px 12px rgba(220,0,32,0.04)",
-                    fontSize: 17,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <div>
-                    {msg.body}
-                  </div>
-
-                  {/* Media Preview */}
-                  {msg.media_url && (
-                    <div style={{ marginTop: 10 }}>
-                      {/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.media_url) ? (
-                        <img
-                          src={msg.media_url}
-                          alt="media"
-                          style={{ maxWidth: 180, maxHeight: 180, borderRadius: 8, marginTop: 4, boxShadow: "0 2px 12px #bbb4" }}
-                        />
-                      ) : (
-                        <a
-                          href={msg.media_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#007bff",
-                            fontWeight: "bold",
-                            display: "inline-block",
-                            marginTop: 4,
-                            background: "#fff",
-                            padding: "6px 14px",
-                            borderRadius: 5,
-                            textDecoration: "none",
-                            border: "1px solid #e2001a",
-                          }}
-                        >
-                          📄 View File
-                        </a>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Location Preview */}
-                  {msg.location_json && (() => {
-                    try {
-                      const loc = JSON.parse(msg.location_json);
-                      return loc && loc.latitude && loc.longitude ? (
-                        <div style={{ marginTop: 10 }}>
-                          <a
-                            href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              color: "#007bff",
-                              textDecoration: "underline",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            📍 View Location
-                          </a>
-                        </div>
-                      ) : null;
-                    } catch {
-                      return null;
-                    }
-                  })()}
-
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color:
-                        msg.direction === "outgoing"
-                          ? "#ffe0e0"
-                          : "#888",
-                      marginTop: 10,
-                    }}
-                  >
-                    {new Date(Number(msg.timestamp)).toLocaleString()}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <form
-              onSubmit={handleSend}
-              style={{
-                position: "fixed",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: "#fff",
-                borderTop: "1.5px solid #eee",
-                display: "flex",
-                gap: 10,
-                padding: 16,
-                maxWidth: 650,
-                margin: "0 auto",
-              }}
-            >
-              <input
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
-                placeholder="Type a reply…"
-                disabled={sending}
-                style={{
-                  flex: 1,
-                  borderRadius: 8,
-                  border: "1.5px solid #bbb",
-                  padding: "13px 18px",
-                  fontSize: 18,
-                }}
-              />
-              <button
-                type="submit"
-                disabled={sending || !reply.trim()}
-                style={{
-                  background: "#e2001a",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "13px 30px",
-                  fontWeight: "bold",
-                  fontSize: 19,
-                  cursor: sending ? "wait" : "pointer",
-                }}
-              >
-                Send
-              </button>
-            </form>
-          </div>
-        )}
-      </main>
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+// Table cell and header styles for dense view
+const td = { padding: "6px 12px", fontSize: 15, color: "#223", verticalAlign: "middle", border: "none" } as const;
+const th = { padding: "7px 13px", fontSize: 14, color: "#555", textAlign: "left", fontWeight: 700, border: "none" } as const;
+
+// Tag display
+function Tag({ tag }: { tag: string }) {
+  const colorMap: any = {
+    support: "#1890ff",
+    accounts: "#ffc107",
+    sales: "#28a745",
+    lead: "#e2001a",
+    closed: "#888",
+    unverified: "#aaa"
+  };
+  return (
+    <span style={{
+      display: "inline-block",
+      background: colorMap[tag] || "#aaa",
+      color: "#fff",
+      fontWeight: 600,
+      fontSize: 13,
+      padding: "2px 12px",
+      borderRadius: 16,
+      minWidth: 0,
+      textAlign: "center",
+    }}>
+      {tag[0].toUpperCase() + tag.slice(1)}
+    </span>
   );
 }
 
