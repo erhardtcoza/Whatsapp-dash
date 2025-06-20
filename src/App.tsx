@@ -1,12 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
-import AutoResponse from "./AutoResponse"; // If implemented
+import AutoResponse from "./AutoResponse";
 import "./App.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "";
-
-// Utility: role check
+// --- Helpers ---
 function canView(section: string, role: string) {
   if (role === "admin") return true;
   if (section === "support") return role === "support";
@@ -14,8 +12,6 @@ function canView(section: string, role: string) {
   if (["sales", "leads", "unlinked"].includes(section)) return role === "sales";
   return false;
 }
-
-// Access Denied view
 function AccessDenied() {
   return (
     <div style={{ padding: 70, textAlign: "center", fontSize: 22, color: "#e2001a" }}>
@@ -37,7 +33,6 @@ export default function App() {
     const u = localStorage.getItem("wa-user");
     return u ? JSON.parse(u) : null;
   });
-
   function handleLoginSuccess(userObj: any) {
     setUser(userObj);
     localStorage.setItem("wa-user", JSON.stringify(userObj));
@@ -51,7 +46,7 @@ export default function App() {
   const [section, setSection] = useState("support");
   const [search, setSearch] = useState("");
 
-  // --- COLORS (reuse from previous answers) ---
+  // --- COLORS (light/dark theme) ---
   const c = darkMode
     ? {
         bg: "#1a1d22", card: "#23262b", border: "#23262b",
@@ -75,7 +70,7 @@ export default function App() {
     return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
 
-  // --- LOGOUT BUTTON (Top right) ---
+  // --- LOGOUT BUTTON & TOP BAR ---
   const topBar = (
     <div
       style={{
@@ -84,6 +79,7 @@ export default function App() {
         background: c.card,
         borderBottom: `2px solid ${c.red}`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 15,
       }}
     >
       <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
@@ -112,7 +108,6 @@ export default function App() {
     </div>
   );
 
-  // --- SIDEBAR WITH ROLE FILTER ---
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
       <Sidebar
@@ -126,50 +121,86 @@ export default function App() {
         onDarkMode={() => setDarkMode((d) => !d)}
       />
 
-      <div style={{ flex: 1 }}>
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        background: c.bg,
+      }}>
         {topBar}
 
-        {/* --- ACCESS RESTRICTIONS FOR EACH SECTION --- */}
-        {/* Support */}
-        {section === "support" && !["admin", "support"].includes(user.role) && <AccessDenied />}
-        {section === "support" && ["admin", "support"].includes(user.role) && (
-          <div style={{ padding: 40, color: c.text }}>Support chat view (todo)</div>
-        )}
+        {/* --- Card container: Makes the chat view & panels always fit inside the card, not overflowing --- */}
+        <div
+          style={{
+            flex: 1,
+            width: "100%",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "24px 0 0 0",
+            background: c.bg,
+          }}
+        >
+          <div
+            style={{
+              width: "96%",
+              maxWidth: 880,
+              minHeight: 420,
+              background: c.card,
+              borderRadius: 16,
+              boxShadow: "0 2px 14px #0001",
+              padding: "0 0 26px 0",
+              color: c.text,
+              display: "flex",
+              flexDirection: "column",
+              marginBottom: 40,
+            }}
+          >
+            {/* --- Main Section Routing --- */}
+            {/* Support */}
+            {section === "support" && !["admin", "support"].includes(user.role) && <AccessDenied />}
+            {section === "support" && ["admin", "support"].includes(user.role) && (
+              <div style={{ padding: 40, color: c.text }}>Support chat view (todo)</div>
+            )}
 
-        {/* Accounts */}
-        {section === "accounts" && !["admin", "accounts"].includes(user.role) && <AccessDenied />}
-        {section === "accounts" && ["admin", "accounts"].includes(user.role) && (
-          <div style={{ padding: 40, color: c.text }}>Accounts chat view (todo)</div>
-        )}
+            {/* Accounts */}
+            {section === "accounts" && !["admin", "accounts"].includes(user.role) && <AccessDenied />}
+            {section === "accounts" && ["admin", "accounts"].includes(user.role) && (
+              <div style={{ padding: 40, color: c.text }}>Accounts chat view (todo)</div>
+            )}
 
-        {/* Sales/Leads/Unlinked */}
-        {["sales", "leads", "unlinked"].includes(section) &&
-          !["admin", "sales"].includes(user.role) && <AccessDenied />}
-        {["sales", "leads", "unlinked"].includes(section) &&
-          ["admin", "sales"].includes(user.role) && (
-          <div style={{ padding: 40, color: c.text }}>
-            {section[0].toUpperCase() + section.slice(1)} chat view (todo)
+            {/* Sales/Leads/Unlinked */}
+            {["sales", "leads", "unlinked"].includes(section) &&
+              !["admin", "sales"].includes(user.role) && <AccessDenied />}
+            {["sales", "leads", "unlinked"].includes(section) &&
+              ["admin", "sales"].includes(user.role) && (
+                <div style={{ padding: 40, color: c.text }}>
+                  {section[0].toUpperCase() + section.slice(1)} chat view (todo)
+                </div>
+              )}
+
+            {/* Broadcast, AutoResponse, OfficeHours, System */}
+            {["broadcast", "autoresp", "office", "system", "adduser"].includes(section) &&
+              user.role !== "admin" && <AccessDenied />}
+            {section === "broadcast" && user.role === "admin" && (
+              <div style={{ padding: 40, color: c.text }}>Broadcast panel (todo)</div>
+            )}
+            {section === "autoresp" && user.role === "admin" && (
+              <AutoResponse colors={c} darkMode={darkMode} />
+            )}
+            {section === "office" && user.role === "admin" && (
+              <div style={{ padding: 40, color: c.text }}>Office Hours panel (todo)</div>
+            )}
+            {section === "system" && user.role === "admin" && (
+              <div style={{ padding: 40, color: c.text }}>System page (todo)</div>
+            )}
+            {section === "adduser" && user.role === "admin" && (
+              <div style={{ padding: 40, color: c.text }}>Add User page (todo)</div>
+            )}
           </div>
-        )}
-
-        {/* Broadcast, AutoResponse, OfficeHours, System */}
-        {["broadcast", "autoresp", "office", "system", "adduser"].includes(section) &&
-          user.role !== "admin" && <AccessDenied />}
-        {section === "broadcast" && user.role === "admin" && (
-          <div style={{ padding: 40, color: c.text }}>Broadcast panel (todo)</div>
-        )}
-        {section === "autoresp" && user.role === "admin" && (
-          <AutoResponse colors={c} darkMode={darkMode} />
-        )}
-        {section === "office" && user.role === "admin" && (
-          <div style={{ padding: 40, color: c.text }}>Office Hours panel (todo)</div>
-        )}
-        {section === "system" && user.role === "admin" && (
-          <div style={{ padding: 40, color: c.text }}>System page (todo)</div>
-        )}
-        {section === "adduser" && user.role === "admin" && (
-          <div style={{ padding: 40, color: c.text }}>Add User page (todo)</div>
-        )}
+        </div>
       </div>
     </div>
   );
