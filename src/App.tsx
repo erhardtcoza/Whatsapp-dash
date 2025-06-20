@@ -3,12 +3,22 @@ import "./App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
+const TAGS = [
+  { label: "Support", value: "support", color: "#1890ff" },
+  { label: "Accounts", value: "accounts", color: "#ffc107" },
+  { label: "Sales", value: "sales", color: "#28a745" },
+  { label: "Lead", value: "lead", color: "#e2001a" },
+  { label: "Unverified", value: "unverified", color: "#888" },
+];
+
 async function getChats() {
   const res = await fetch(`${API_BASE}/api/chats`);
   return res.json();
 }
 async function getMessages(phone: string) {
-  const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
+  const res = await fetch(
+    `${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`
+  );
   return res.json();
 }
 async function sendMessage(phone: string, body: string) {
@@ -16,6 +26,13 @@ async function sendMessage(phone: string, body: string) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone, body }),
+  });
+}
+async function setTag(from_number: string, tag: string) {
+  await fetch(`${API_BASE}/api/set-tag`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from_number, tag }),
   });
 }
 
@@ -27,37 +44,9 @@ function App() {
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
+  const [currentTag, setCurrentTag] = useState("lead");
+  const [tagLoading, setTagLoading] = useState(false);
 
- // List of tags
-const TAGS = [
-  { label: "Support", value: "support", color: "#1890ff" },
-  { label: "Accounts", value: "accounts", color: "#ffc107" },
-  { label: "Sales", value: "sales", color: "#28a745" },
-  { label: "Lead", value: "lead", color: "#e2001a" },
-  { label: "Unverified", value: "unverified", color: "#888" }
-];
-
-const [currentTag, setCurrentTag] = useState(selectedChat?.tag || "lead");
-const [tagLoading, setTagLoading] = useState(false);
-
-// Fetch current tag when chat changes (optional, or you can keep track on client)
-useEffect(() => {
-  setCurrentTag(selectedChat?.tag || "lead");
-}, [selectedChat]);
-
-const handleTagChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-  const newTag = e.target.value;
-  setTagLoading(true);
-  await fetch(`${API_BASE}/api/set-tag`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ from_number: selectedChat.from_number, tag: newTag })
-  });
-  setCurrentTag(newTag);
-  setTagLoading(false);
-  // Optionally: refetch chat list/messages to update UI
-};
- 
   // Load chats on mount or after returning from a chat
   useEffect(() => {
     setLoadingChats(true);
@@ -75,6 +64,8 @@ const handleTagChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
       setMessages(data);
       setLoadingMsgs(false);
     });
+    // Set current tag for the chat
+    setCurrentTag(selectedChat.tag || "lead");
   }, [selectedChat]);
 
   // Send a reply
@@ -87,6 +78,29 @@ const handleTagChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     // Reload messages
     getMessages(selectedChat.from_number).then((data) => setMessages(data));
     setSending(false);
+  };
+
+  // Handle tag change
+  const handleTagChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const newTag = e.target.value;
+    setTagLoading(true);
+    await setTag(selectedChat.from_number, newTag);
+    setCurrentTag(newTag);
+    setTagLoading(false);
+    // Update chat tag in chat list
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.from_number === selectedChat.from_number
+          ? { ...chat, tag: newTag }
+          : chat
+      )
+    );
+    // Update selected chat's tag
+    setSelectedChat((prev: any) =>
+      prev ? { ...prev, tag: newTag } : prev
+    );
   };
 
   return (
@@ -190,11 +204,32 @@ const handleTagChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
                       fontWeight: "bold",
                       fontSize: 28,
                       border: "2.5px solid #e2001a",
+                      position: "relative",
                     }}
                   >
                     {chat.name
                       ? chat.name[0].toUpperCase()
                       : <span style={{ color: "#e2001a", fontSize: 30 }}>?</span>}
+                    {/* Tag badge */}
+                    <span style={{
+                      position: "absolute",
+                      bottom: 2,
+                      right: 2,
+                      width: 18,
+                      height: 18,
+                      background: TAGS.find(t => t.value === chat.tag)?.color || "#888",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      fontSize: 13,
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "1.5px solid #fff",
+                      boxShadow: "0 0 4px rgba(0,0,0,0.04)",
+                    }}>
+                      {TAGS.find(t => t.value === chat.tag)?.label[0] || "?"}
+                    </span>
                   </div>
                   <div style={{ flex: 1 }}>
                     <div
@@ -293,6 +328,31 @@ const handleTagChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
               >
                 {selectedChat.from_number}
               </span>
+              {/* Tag selector */}
+              <div style={{ marginLeft: 18 }}>
+                <label style={{ marginRight: 8, fontWeight: 600 }}>Tag:</label>
+                <select
+                  value={currentTag}
+                  onChange={handleTagChange}
+                  disabled={tagLoading}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: 8,
+                    border: `2px solid ${TAGS.find(t => t.value === currentTag)?.color || "#e2001a"}`,
+                    background: "#fff",
+                    color: TAGS.find(t => t.value === currentTag)?.color || "#e2001a",
+                    fontWeight: "bold",
+                    fontSize: 16
+                  }}
+                >
+                  {TAGS.map(tag => (
+                    <option key={tag.value} value={tag.value} style={{ color: tag.color }}>
+                      {tag.label}
+                    </option>
+                  ))}
+                </select>
+                {tagLoading && <span style={{ marginLeft: 10, color: "#e2001a" }}>Updating...</span>}
+              </div>
             </div>
             <div
               style={{
