@@ -3,14 +3,6 @@ import Sidebar from "./Sidebar";
 import Login from "./Login";
 import "./App.css";
 
-function AccessDenied() {
-  return (
-    <div style={{ padding: 70, textAlign: "center", fontSize: 22, color: "#e2001a" }}>
-      Access Denied
-    </div>
-  );
-}
-
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
