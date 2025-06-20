@@ -1,16 +1,8 @@
-import vinetLogo from "./assets/logo.jpeg"; // Save logo.jpeg to /src/assets
+import vinetLogo from "./assets/logo.jpeg"; // Use your logo asset
 
 export default function Sidebar({
-  selected,
-  darkMode,
-  counts = {},
-  colors,
-  onSearch,
-  search,
-  setSearch,
-  onDarkMode,
+  selected, onSelect, darkMode, colors, user, search, setSearch, onDarkMode,
 }: any) {
-  // "counts" = { sales: 0, accounts: 0, support: 0 }
   return (
     <div
       style={{
@@ -36,92 +28,37 @@ export default function Sidebar({
         />
       </div>
 
-      {/* TOP: Main menu */}
-      <SidebarItem
-        label="New Chat"
-        icon="✚"
-        selected={selected === "newchat"}
-        onClick={() => onSelect("newchat")}
-        style={{ fontWeight: 700, color: colors.red, marginBottom: 3 }}
-      />
-      <SidebarItem
-        label="Unlinked Clients"
-        icon="🔗"
-        selected={selected === "unlinked"}
-        onClick={() => onSelect("unlinked")}
-        style={{ marginBottom: 22 }}
-      />
-
-      {/* SALES/ACCOUNTS/SUPPORT */}
-      <SidebarItem
-        label="Sales"
-        icon="💼"
-        badge={counts.sales}
-        selected={selected === "sales"}
-        onClick={() => onSelect("sales")}
-      />
-      <SidebarItem
-        label="Accounts"
-        icon="💳"
-        badge={counts.accounts}
-        selected={selected === "accounts"}
-        onClick={() => onSelect("accounts")}
-      />
-      <SidebarItem
-        label="Support"
-        icon="🛠️"
-        badge={counts.support}
-        selected={selected === "support"}
-        onClick={() => onSelect("support")}
-        style={{ marginBottom: 38 }}
-      />
-
-      {/* SECONDARY MENU */}
-      <SidebarItem
-        label="Auto Response"
-        icon="⚡️"
-        selected={selected === "autoresp"}
-        onClick={() => onSelect("autoresp")}
-      />
-      <SidebarItem
-        label="Office Hours"
-        icon="⏰"
-        selected={selected === "office"}
-        onClick={() => onSelect("office")}
-      />
-      <SidebarItem
-        label="Broadcast"
-        icon="📢"
-        selected={selected === "broadcast"}
-        onClick={() => onSelect("broadcast")}
-        style={{ marginBottom: 40 }}
-      />
-
-      {/* Divider */}
-      <div style={{ height: 1, background: colors.border, margin: "18px 0 16px 0" }} />
-      <SidebarItem
-        label="System"
-        icon="🛠️"
-        selected={selected === "system"}
-        onClick={() => onSelect("system")}
-      />
-      <SidebarItem
-        label="PlaceHolder"
-        icon="🔧"
-        selected={selected === "ph1"}
-        onClick={() => onSelect("ph1")}
-      />
-      <SidebarItem
-        label="PlaceHolder"
-        icon="🔧"
-        selected={selected === "ph2"}
-        onClick={() => onSelect("ph2")}
-        style={{ marginBottom: 20 }}
-      />
+      {/* Menu */}
+      {user?.role === "admin" && (
+        <SidebarItem label="Unlinked Clients" icon="🔗" selected={selected === "unlinked"} onClick={() => onSelect("unlinked")} style={{ marginBottom: 12 }} />
+      )}
+      {(user?.role === "admin" || user?.role === "support") && (
+        <SidebarItem label="Support" icon="🛠️" selected={selected === "support"} onClick={() => onSelect("support")} />
+      )}
+      {(user?.role === "admin" || user?.role === "accounts") && (
+        <SidebarItem label="Accounts" icon="💳" selected={selected === "accounts"} onClick={() => onSelect("accounts")} />
+      )}
+      {(user?.role === "admin" || user?.role === "sales") && (
+        <>
+          <SidebarItem label="Sales" icon="💼" selected={selected === "sales"} onClick={() => onSelect("sales")} />
+          <SidebarItem label="Leads" icon="📈" selected={selected === "leads"} onClick={() => onSelect("leads")} />
+        </>
+      )}
+      {/* Admin-only */}
+      {user?.role === "admin" && (
+        <>
+          <SidebarItem label="Broadcast" icon="📢" selected={selected === "broadcast"} onClick={() => onSelect("broadcast")} />
+          <SidebarItem label="Auto Response" icon="⚡️" selected={selected === "autoresp"} onClick={() => onSelect("autoresp")} />
+          <SidebarItem label="Office Hours" icon="⏰" selected={selected === "office"} onClick={() => onSelect("office")} />
+          <SidebarItem label="System" icon="🛠️" selected={selected === "system"} onClick={() => onSelect("system")} />
+          <SidebarItem label="Add User" icon="➕" selected={selected === "adduser"} onClick={() => onSelect("adduser")} />
+        </>
+      )}
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
-      {/* Search and darkmode at very bottom */}
+
+      {/* Search and dark mode */}
       <div style={{ padding: 18 }}>
         <input
           type="search"
@@ -151,8 +88,6 @@ export default function Sidebar({
             padding: "7px 0",
             fontWeight: 700,
             fontSize: 15,
-            letterSpacing: 0.3,
-            marginBottom: 5,
             marginTop: 3,
             cursor: "pointer",
           }}
@@ -164,14 +99,7 @@ export default function Sidebar({
   );
 }
 
-function SidebarItem({
-  label,
-  icon,
-  badge,
-  selected,
-  onClick,
-  style,
-}: any) {
+function SidebarItem({ label, icon, selected, onClick, style }: any) {
   return (
     <div
       onClick={onClick}
@@ -192,23 +120,6 @@ function SidebarItem({
     >
       <span style={{ marginRight: 14, fontSize: 16 }}>{icon}</span>
       {label}
-      {badge > 0 && (
-        <span
-          style={{
-            background: "#e2001a",
-            color: "#fff",
-            fontWeight: 700,
-            borderRadius: 10,
-            minWidth: 22,
-            fontSize: 13,
-            textAlign: "center",
-            marginLeft: "auto",
-            padding: "0 7px",
-          }}
-        >
-          {badge}
-        </span>
-      )}
     </div>
   );
 }
