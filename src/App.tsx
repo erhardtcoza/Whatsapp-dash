@@ -28,6 +28,36 @@ function App() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
 
+ // List of tags
+const TAGS = [
+  { label: "Support", value: "support", color: "#1890ff" },
+  { label: "Accounts", value: "accounts", color: "#ffc107" },
+  { label: "Sales", value: "sales", color: "#28a745" },
+  { label: "Lead", value: "lead", color: "#e2001a" },
+  { label: "Unverified", value: "unverified", color: "#888" }
+];
+
+const [currentTag, setCurrentTag] = useState(selectedChat?.tag || "lead");
+const [tagLoading, setTagLoading] = useState(false);
+
+// Fetch current tag when chat changes (optional, or you can keep track on client)
+useEffect(() => {
+  setCurrentTag(selectedChat?.tag || "lead");
+}, [selectedChat]);
+
+const handleTagChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const newTag = e.target.value;
+  setTagLoading(true);
+  await fetch(`${API_BASE}/api/set-tag`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from_number: selectedChat.from_number, tag: newTag })
+  });
+  setCurrentTag(newTag);
+  setTagLoading(false);
+  // Optionally: refetch chat list/messages to update UI
+};
+ 
   // Load chats on mount or after returning from a chat
   useEffect(() => {
     setLoadingChats(true);
