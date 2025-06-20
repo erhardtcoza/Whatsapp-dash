@@ -2,7 +2,6 @@ import vinetLogo from "./assets/logo.jpeg"; // Save logo.jpeg to /src/assets
 
 export default function Sidebar({
   selected,
-  onSelect,
   darkMode,
   counts = {},
   colors,
