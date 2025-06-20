@@ -1,6 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import Sidebar from "./Sidebar";
 import "./App.css";
+import AutoResponse from "./AutoResponse";
+// ...
+{section === "autoresp" && <AutoResponse colors={c} darkMode={darkMode} />}
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
