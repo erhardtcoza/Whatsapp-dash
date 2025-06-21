@@ -20,7 +20,7 @@ export default function UnlinkedClientsPage({ colors }: any) {
         setLoading(false);
       });
   }, []);
-
+  
   return (
     <div style={{ padding: "38px 36px", width: "100%" }}>
       <h2 style={{ color: colors.red, fontWeight: 700, marginBottom: 20 }}>Unlinked Clients</h2>
