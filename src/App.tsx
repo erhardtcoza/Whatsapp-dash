@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
-import "./App.css";
-
-// Import your content pages
 import SupportPage from "./SupportPage";
 import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
@@ -14,12 +11,13 @@ import OfficeHoursPage from "./OfficeHoursPage";
 import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import UnlinkedClientsPage from "./UnlinkedClientsPage";
+import "./App.css";
 
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
   useEffect(() => {
-    document.body.style.background = darkMode ? "#23262b" : "#f7f7fa";
+    document.body.style.background = darkMode ? "#1a1d22" : "#f7f7fa";
     localStorage.setItem("wa-dark", darkMode ? "1" : "0");
   }, [darkMode]);
 
@@ -39,15 +37,14 @@ export default function App() {
   const [section, setSection] = useState("support");
   const [search, setSearch] = useState("");
 
-  // Colors (dark/light)
   const c = darkMode
     ? {
-        bg: "#23262b", card: "#292c32", border: "#333",
+        bg: "#1a1d22", card: "#23262b", border: "#23262b",
         text: "#f6f7fa", sub: "#bfc1c7", red: "#e2001a",
         sidebar: "#23262b", sidebarSel: "#e2001a", sidebarTxt: "#fff",
-        input: "#292c32", inputText: "#fff", th: "#ccd0da", td: "#eee",
+        input: "#262931", inputText: "#fff", th: "#ccd0da", td: "#eee",
         badge: "#e2001a", tag: "#555", tagTxt: "#fff",
-        msgIn: "#292c32", msgOut: "#e2001a",
+        msgIn: "#262931", msgOut: "#e2001a",
       }
     : {
         bg: "#f7f7fa", card: "#fff", border: "#eaeaea",
@@ -58,48 +55,26 @@ export default function App() {
         msgIn: "#fff", msgOut: "#e2001a",
       };
 
-  // Renders the selected section's content
-  function renderSection(section: string) {
-    switch (section) {
-      case "support": return <SupportPage colors={c} darkMode={darkMode} />;
-      case "accounts": return <AccountsPage colors={c} darkMode={darkMode} />;
-      case "sales": return <SalesPage colors={c} darkMode={darkMode} />;
-      case "leads": return <LeadsPage colors={c} darkMode={darkMode} />;
-      case "broadcast": return <BroadcastPage colors={c} darkMode={darkMode} />;
-      case "autoresp": return <AutoResponsePage colors={c} darkMode={darkMode} />;
-      case "office": return <OfficeHoursPage colors={c} darkMode={darkMode} />;
-      case "system": return <SystemPage colors={c} darkMode={darkMode} />;
-      case "adduser": return <AddUserPage colors={c} darkMode={darkMode} />;
-      case "unlinked": return <UnlinkedClientsPage colors={c} darkMode={darkMode} />;
-      default: return <div style={{ padding: 40 }}>Section not found.</div>;
-    }
-  }
-
   if (!user) {
-    return <Login onLogin={handleLoginSuccess} colors={c} />;
+    return <Login onLogin={handleLoginSuccess} />;
   }
 
   const topBar = (
     <div
       style={{
         width: "100%",
-        padding: "18px 0 10px 0",
-        background: c.bg,
+        padding: "14px 30px 12px 205px",
+        background: c.card,
         borderBottom: `2px solid ${c.red}`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         position: "sticky", top: 0, zIndex: 15,
+        minHeight: 66,
       }}
     >
-      <span style={{
-        fontWeight: 700,
-        fontSize: 22,
-        color: c.red,
-        marginLeft: 28,
-        letterSpacing: 0.3,
-      }}>
+      <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
         {section[0].toUpperCase() + section.slice(1)}
       </span>
-      <div style={{ display: "flex", alignItems: "center", gap: 18, marginRight: 30 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
         <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
           {user.username} ({user.role})
         </span>
@@ -122,16 +97,24 @@ export default function App() {
     </div>
   );
 
+  function renderContent() {
+    switch (section) {
+      case "support": return <SupportPage colors={c} darkMode={darkMode} />;
+      case "accounts": return <AccountsPage colors={c} darkMode={darkMode} />;
+      case "sales": return <SalesPage colors={c} darkMode={darkMode} />;
+      case "leads": return <LeadsPage colors={c} darkMode={darkMode} />;
+      case "broadcast": return <BroadcastPage colors={c} darkMode={darkMode} />;
+      case "autoresp": return <AutoResponsePage colors={c} darkMode={darkMode} />;
+      case "office": return <OfficeHoursPage colors={c} darkMode={darkMode} />;
+      case "system": return <SystemPage colors={c} darkMode={darkMode} />;
+      case "adduser": return <AddUserPage colors={c} darkMode={darkMode} />;
+      case "unlinked": return <UnlinkedClientsPage colors={c} darkMode={darkMode} />;
+      default: return <div style={{ padding: 40, color: c.text }}>Section not found.</div>;
+    }
+  }
+
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: c.bg,
-        color: c.text,
-        overflow: "hidden"
-      }}
-    >
+    <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
       <Sidebar
         selected={section}
         onSelect={setSection}
@@ -142,46 +125,36 @@ export default function App() {
         setSearch={setSearch}
         onDarkMode={() => setDarkMode((d) => !d)}
       />
-      {/* Content area - boxed, responsive */}
-      <main
-        style={{
-          flex: 1,
-          minHeight: "100vh",
-          background: c.bg,
-          padding: "0",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <div style={{
-          width: "100%",
-          maxWidth: 1280,
-          minHeight: "100vh",
-          background: c.bg,
-          display: "flex",
-          flexDirection: "column",
-        }}>
-          {topBar}
-          <div
-            style={{
-              flex: 1,
-              margin: "30px 24px 0 24px",
-              background: c.card,
-              borderRadius: 16,
-              boxShadow: "0 2px 14px #0001",
-              color: c.text,
-              minHeight: 420,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            {renderSection(section)}
-          </div>
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        background: c.bg,
+        overflow: "hidden"
+      }}>
+        {topBar}
+        <div
+          style={{
+            flex: 1,
+            width: "98%",
+            maxWidth: 1400,
+            minHeight: 480,
+            background: c.card,
+            borderRadius: 18,
+            boxShadow: "0 2px 16px #0001",
+            padding: "0 0 30px 0",
+            color: c.text,
+            display: "flex",
+            flexDirection: "column",
+            margin: "28px auto 36px auto",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {renderContent()}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
