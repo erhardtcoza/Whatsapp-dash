@@ -1,6 +1,6 @@
 type LoginProps = {
   onLogin: (user: any) => void;
-  colors: any; // You can define a stricter type if you want
+  colors?: any;
 };
 
 export default function Login({ onLogin, colors }: LoginProps) {
