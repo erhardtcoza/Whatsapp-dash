@@ -123,39 +123,41 @@ export default function App() {
           style={{
             flex: 1,
             display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            width: "100%",
-            padding: "28px 24px 0 0",
-            boxSizing: "border-box",
+            flexDirection: "column",
+            height: "100%",
+            minHeight: "calc(100vh - 62px)", // 62px matches topBar height
+            background: c.bg,
+            padding: "0 0 0 0",
+            justifyContent: "flex-start",
+            alignItems: "stretch",
           }}
         >
           <div
             style={{
               flex: 1,
-              minHeight: 420,
               background: c.card,
-              borderRadius: 16,
+              borderRadius: 18,
               boxShadow: "0 2px 14px #0001",
-              padding: "0 0 22px 0",
+              margin: "0",
+              padding: "0",
               color: c.text,
-              marginLeft: 0,
-              marginRight: 0,
-              maxWidth: "100%",
+              width: "100%",
+              height: "100%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "flex-start",
+              justifyContent: "center",
             }}
           >
-            <div style={{
-              padding: "40px 12px",
-              color: c.text,
-              fontSize: 18,
-              width: "100%",
-              textAlign: "center",
-              minHeight: 200,
-            }}>
+            <div
+              style={{
+                color: c.text,
+                fontSize: 20,
+                width: "100%",
+                textAlign: "center",
+                padding: "32px 0",
+              }}
+            >
               {section[0].toUpperCase() + section.slice(1)} section coming soon.
             </div>
           </div>
