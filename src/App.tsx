@@ -1,23 +1,13 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
-import SupportPage from "./SupportPage";
-import AccountsPage from "./AccountsPage";
-import SalesPage from "./SalesPage";
-import LeadsPage from "./LeadsPage";
-import BroadcastPage from "./BroadcastPage";
-import AutoResponsePage from "./AutoResponsePage";
-import OfficeHoursPage from "./OfficeHoursPage";
-import SystemPage from "./SystemPage";
-import AddUserPage from "./AddUserPage";
-import UnlinkedClientsPage from "./UnlinkedClientsPage";
 import "./App.css";
 
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
   useEffect(() => {
-    document.body.style.background = darkMode ? "#1a1d22" : "#f7f7fa";
+    document.body.style.background = darkMode ? "#181a1f" : "#f7f7fa";
     localStorage.setItem("wa-dark", darkMode ? "1" : "0");
   }, [darkMode]);
 
@@ -39,12 +29,12 @@ export default function App() {
 
   const c = darkMode
     ? {
-        bg: "#1a1d22", card: "#23262b", border: "#23262b",
+        bg: "#181a1f", card: "#23262b", border: "#23262b",
         text: "#f6f7fa", sub: "#bfc1c7", red: "#e2001a",
         sidebar: "#23262b", sidebarSel: "#e2001a", sidebarTxt: "#fff",
         input: "#262931", inputText: "#fff", th: "#ccd0da", td: "#eee",
         badge: "#e2001a", tag: "#555", tagTxt: "#fff",
-        msgIn: "#262931", msgOut: "#e2001a",
+        msgIn: "#23262b", msgOut: "#e2001a",
       }
     : {
         bg: "#f7f7fa", card: "#fff", border: "#eaeaea",
@@ -59,62 +49,17 @@ export default function App() {
     return <Login onLogin={handleLoginSuccess} />;
   }
 
-  const topBar = (
+  return (
     <div
       style={{
-        width: "100%",
-        padding: "14px 30px 12px 205px",
-        background: c.card,
-        borderBottom: `2px solid ${c.red}`,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "sticky", top: 0, zIndex: 15,
-        minHeight: 66,
+        display: "flex",
+        minHeight: "100vh",
+        minWidth: 0,
+        background: c.bg,
+        color: c.text,
       }}
     >
-      <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
-        {section[0].toUpperCase() + section.slice(1)}
-      </span>
-      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-        <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
-          {user.username} ({user.role})
-        </span>
-        <button
-          onClick={handleLogout}
-          style={{
-            background: c.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "7px 16px",
-            fontWeight: "bold",
-            fontSize: 15,
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-
-  function renderContent() {
-    switch (section) {
-      case "support": return <SupportPage colors={c} darkMode={darkMode} />;
-      case "accounts": return <AccountsPage colors={c} darkMode={darkMode} />;
-      case "sales": return <SalesPage colors={c} darkMode={darkMode} />;
-      case "leads": return <LeadsPage colors={c} darkMode={darkMode} />;
-      case "broadcast": return <BroadcastPage colors={c} darkMode={darkMode} />;
-      case "autoresp": return <AutoResponsePage colors={c} darkMode={darkMode} />;
-      case "office": return <OfficeHoursPage colors={c} darkMode={darkMode} />;
-      case "system": return <SystemPage colors={c} darkMode={darkMode} />;
-      case "adduser": return <AddUserPage colors={c} darkMode={darkMode} />;
-      case "unlinked": return <UnlinkedClientsPage colors={c} darkMode={darkMode} />;
-      default: return <div style={{ padding: 40, color: c.text }}>Section not found.</div>;
-    }
-  }
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
+      {/* Sidebar always at left, full height */}
       <Sidebar
         selected={section}
         onSelect={setSection}
@@ -125,36 +70,95 @@ export default function App() {
         setSearch={setSearch}
         onDarkMode={() => setDarkMode((d) => !d)}
       />
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        background: c.bg,
-        overflow: "hidden"
-      }}>
-        {topBar}
+      {/* Main Content */}
+      <main
+        style={{
+          flex: 1,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          background: c.bg,
+          padding: "0",
+          minWidth: 0,
+        }}
+      >
+        {/* Top Bar/Header */}
         <div
           style={{
-            flex: 1,
-            width: "98%",
-            maxWidth: 1400,
-            minHeight: 480,
+            width: "100%",
             background: c.card,
-            borderRadius: 18,
-            boxShadow: "0 2px 16px #0001",
-            padding: "0 0 30px 0",
-            color: c.text,
+            borderBottom: `2px solid ${c.red}`,
+            padding: "28px 36px 12px 36px",
             display: "flex",
-            flexDirection: "column",
-            margin: "28px auto 36px auto",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "space-between",
+            position: "sticky",
+            top: 0,
+            zIndex: 100,
+            minHeight: 60,
           }}
         >
-          {renderContent()}
+          <span style={{ fontWeight: 700, fontSize: 26, color: c.red, letterSpacing: 0.5 }}>
+            {section[0].toUpperCase() + section.slice(1)}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+            <span style={{ color: c.sub, fontSize: 16, marginRight: 10, minWidth: 100, textAlign: "right" }}>
+              {user.username} ({user.role})
+            </span>
+            <button
+              onClick={handleLogout}
+              style={{
+                background: c.red,
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "7px 16px",
+                fontWeight: "bold",
+                fontSize: 15,
+                cursor: "pointer",
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
+        {/* Responsive Content Box */}
+        <section
+          style={{
+            flex: 1,
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            background: c.bg,
+            minHeight: 0,
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              maxWidth: 1024,
+              margin: "36px 36px 0 36px",
+              background: c.card,
+              borderRadius: 18,
+              boxShadow: "0 2px 14px #0001",
+              minHeight: "64vh",
+              padding: "0 0 36px 0",
+              color: c.text,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ padding: "40px 0", fontSize: 17, color: c.text }}>
+              {section[0].toUpperCase() + section.slice(1)} section coming soon.
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
