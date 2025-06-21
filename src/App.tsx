@@ -3,11 +3,23 @@ import Sidebar from "./Sidebar";
 import Login from "./Login";
 import "./App.css";
 
+// Import your content pages
+import SupportPage from "./SupportPage";
+import AccountsPage from "./AccountsPage";
+import SalesPage from "./SalesPage";
+import LeadsPage from "./LeadsPage";
+import BroadcastPage from "./BroadcastPage";
+import AutoResponsePage from "./AutoResponsePage";
+import OfficeHoursPage from "./OfficeHoursPage";
+import SystemPage from "./SystemPage";
+import AddUserPage from "./AddUserPage";
+import UnlinkedClientsPage from "./UnlinkedClientsPage";
+
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
   useEffect(() => {
-    document.body.style.background = darkMode ? "#1a1d22" : "#f7f7fa";
+    document.body.style.background = darkMode ? "#23262b" : "#f7f7fa";
     localStorage.setItem("wa-dark", darkMode ? "1" : "0");
   }, [darkMode]);
 
@@ -27,14 +39,15 @@ export default function App() {
   const [section, setSection] = useState("support");
   const [search, setSearch] = useState("");
 
+  // Colors (dark/light)
   const c = darkMode
     ? {
-        bg: "#1a1d22", card: "#23262b", border: "#23262b",
+        bg: "#23262b", card: "#292c32", border: "#333",
         text: "#f6f7fa", sub: "#bfc1c7", red: "#e2001a",
         sidebar: "#23262b", sidebarSel: "#e2001a", sidebarTxt: "#fff",
-        input: "#262931", inputText: "#fff", th: "#ccd0da", td: "#eee",
+        input: "#292c32", inputText: "#fff", th: "#ccd0da", td: "#eee",
         badge: "#e2001a", tag: "#555", tagTxt: "#fff",
-        msgIn: "#262931", msgOut: "#e2001a",
+        msgIn: "#292c32", msgOut: "#e2001a",
       }
     : {
         bg: "#f7f7fa", card: "#fff", border: "#eaeaea",
@@ -45,31 +58,48 @@ export default function App() {
         msgIn: "#fff", msgOut: "#e2001a",
       };
 
+  // Renders the selected section's content
+  function renderSection(section: string) {
+    switch (section) {
+      case "support": return <SupportPage colors={c} darkMode={darkMode} />;
+      case "accounts": return <AccountsPage colors={c} darkMode={darkMode} />;
+      case "sales": return <SalesPage colors={c} darkMode={darkMode} />;
+      case "leads": return <LeadsPage colors={c} darkMode={darkMode} />;
+      case "broadcast": return <BroadcastPage colors={c} darkMode={darkMode} />;
+      case "autoresp": return <AutoResponsePage colors={c} darkMode={darkMode} />;
+      case "office": return <OfficeHoursPage colors={c} darkMode={darkMode} />;
+      case "system": return <SystemPage colors={c} darkMode={darkMode} />;
+      case "adduser": return <AddUserPage colors={c} darkMode={darkMode} />;
+      case "unlinked": return <UnlinkedClientsPage colors={c} darkMode={darkMode} />;
+      default: return <div style={{ padding: 40 }}>Section not found.</div>;
+    }
+  }
+
   if (!user) {
     return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
 
-  // Top Bar
   const topBar = (
     <div
       style={{
         width: "100%",
-        padding: "14px 32px 12px 32px",
-        background: c.card,
+        padding: "18px 0 10px 0",
+        background: c.bg,
         borderBottom: `2px solid ${c.red}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 15,
-        minHeight: 62,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 15,
       }}
     >
-      <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
+      <span style={{
+        fontWeight: 700,
+        fontSize: 22,
+        color: c.red,
+        marginLeft: 28,
+        letterSpacing: 0.3,
+      }}>
         {section[0].toUpperCase() + section.slice(1)}
       </span>
-      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 18, marginRight: 30 }}>
         <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
           {user.username} ({user.role})
         </span>
@@ -92,15 +122,16 @@ export default function App() {
     </div>
   );
 
-  // Main Layout
   return (
-    <div style={{
-      display: "flex",
-      minHeight: "100vh",
-      background: c.bg,
-      width: "100vw",
-      overflowX: "hidden",
-    }}>
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        background: c.bg,
+        color: c.text,
+        overflow: "hidden"
+      }}
+    >
       <Sidebar
         selected={section}
         onSelect={setSection}
@@ -111,58 +142,46 @@ export default function App() {
         setSearch={setSearch}
         onDarkMode={() => setDarkMode((d) => !d)}
       />
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        background: c.bg,
-      }}>
-        {topBar}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            minHeight: "calc(100vh - 62px)", // 62px matches topBar height
-            background: c.bg,
-            padding: "0 0 0 0",
-            justifyContent: "flex-start",
-            alignItems: "stretch",
-          }}
-        >
+      {/* Content area - boxed, responsive */}
+      <main
+        style={{
+          flex: 1,
+          minHeight: "100vh",
+          background: c.bg,
+          padding: "0",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <div style={{
+          width: "100%",
+          maxWidth: 1280,
+          minHeight: "100vh",
+          background: c.bg,
+          display: "flex",
+          flexDirection: "column",
+        }}>
+          {topBar}
           <div
             style={{
               flex: 1,
+              margin: "30px 24px 0 24px",
               background: c.card,
-              borderRadius: 18,
+              borderRadius: 16,
               boxShadow: "0 2px 14px #0001",
-              margin: "0",
-              padding: "0",
               color: c.text,
-              width: "100%",
-              height: "100%",
+              minHeight: 420,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "center"
             }}
           >
-            <div
-              style={{
-                color: c.text,
-                fontSize: 20,
-                width: "100%",
-                textAlign: "center",
-                padding: "32px 0",
-              }}
-            >
-              {section[0].toUpperCase() + section.slice(1)} section coming soon.
-            </div>
+            {renderSection(section)}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
