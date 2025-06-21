@@ -46,8 +46,7 @@ export default function App() {
       };
 
   if (!user) {
-    return <Login onLogin={handleLoginSuccess} colors={c} />;
-  }
+return <Login onLogin={handleLoginSuccess} />;  }
 
   const topBar = (
     <div
