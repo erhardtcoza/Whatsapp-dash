@@ -49,11 +49,12 @@ export default function App() {
     return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
 
-const topBar = (
+  // Top Bar
+  const topBar = (
     <div
       style={{
         width: "100%",
-        padding: "14px 32px 12px 32px", // Less left pad
+        padding: "14px 32px 12px 32px",
         background: c.card,
         borderBottom: `2px solid ${c.red}`,
         display: "flex",
@@ -91,13 +92,14 @@ const topBar = (
     </div>
   );
 
+  // Main Layout
   return (
     <div style={{
       display: "flex",
       minHeight: "100vh",
       background: c.bg,
-      width: "100vw", // New: use full viewport width
-      overflowX: "hidden", // Prevent scrollbars
+      width: "100vw",
+      overflowX: "hidden",
     }}>
       <Sidebar
         selected={section}
@@ -120,30 +122,42 @@ const topBar = (
         <div
           style={{
             flex: 1,
-            width: "99%",
-            maxWidth: 1100, // Wider for more content
-            minHeight: 420,
-            background: c.card,
-            borderRadius: 16,
-            boxShadow: "0 2px 14px #0001",
-            padding: "0 0 22px 0",
-            color: c.text,
             display: "flex",
-            flexDirection: "column",
-            margin: "26px auto 28px auto", // Less margin
-            alignItems: "center", // Center content vertically
-            justifyContent: "flex-start",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            width: "100%",
+            padding: "28px 24px 0 0",
+            boxSizing: "border-box",
           }}
         >
-          <div style={{
-            padding: 40,
-            color: c.text,
-            fontSize: 18,
-            width: "100%",
-            textAlign: "center",
-            minHeight: 200, // Not too tall, fits above the fold
-          }}>
-            {section[0].toUpperCase() + section.slice(1)} section coming soon.
+          <div
+            style={{
+              flex: 1,
+              minHeight: 420,
+              background: c.card,
+              borderRadius: 16,
+              boxShadow: "0 2px 14px #0001",
+              padding: "0 0 22px 0",
+              color: c.text,
+              marginLeft: 0,
+              marginRight: 0,
+              maxWidth: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+            }}
+          >
+            <div style={{
+              padding: "40px 12px",
+              color: c.text,
+              fontSize: 18,
+              width: "100%",
+              textAlign: "center",
+              minHeight: 200,
+            }}>
+              {section[0].toUpperCase() + section.slice(1)} section coming soon.
+            </div>
           </div>
         </div>
       </div>
