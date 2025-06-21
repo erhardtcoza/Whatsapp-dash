@@ -15,10 +15,10 @@ export default function UnlinkedClientsPage({ colors }: any) {
         setClients(data);
         setLoading(false);
       })
-      .catch((err) => {
-        setError("Could not load clients");
-        setLoading(false);
-      });
+.catch((_err) => {
+  setError("Could not load clients");
+  setLoading(false);
+});
   }, []);
   
   return (
