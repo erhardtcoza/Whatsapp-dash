@@ -1,9 +1,14 @@
-// src/SupportPage.tsx
-export default function SupportPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function SupportPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Support</h2>
-      <div>Support content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      Support section coming soon.
     </div>
   );
 }
