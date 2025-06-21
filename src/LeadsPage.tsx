@@ -1,9 +1,14 @@
-// src/LeadsPage.tsx
-export default function LeadsPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function LeadsPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Leads</h2>
-      <div>Leads content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      LeadsPage section coming soon.
     </div>
   );
 }
