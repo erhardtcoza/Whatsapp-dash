@@ -54,12 +54,13 @@ export default function App() {
       style={{
         display: "flex",
         minHeight: "100vh",
-        minWidth: 0,
+        width: "100vw",
         background: c.bg,
         color: c.text,
+        overflow: "hidden",
       }}
     >
-      {/* Sidebar always at left, full height */}
+      {/* Sidebar at left */}
       <Sidebar
         selected={section}
         onSelect={setSection}
@@ -71,18 +72,17 @@ export default function App() {
         onDarkMode={() => setDarkMode((d) => !d)}
       />
       {/* Main Content */}
-      <main
+      <div
         style={{
           flex: 1,
-          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           background: c.bg,
-          padding: "0",
           minWidth: 0,
+          minHeight: "100vh",
         }}
       >
-        {/* Top Bar/Header */}
+        {/* Header */}
         <div
           style={{
             width: "100%",
@@ -92,13 +92,12 @@ export default function App() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            zIndex: 100,
-            minHeight: 60,
+            minHeight: 66,
+            position: "relative",
+            zIndex: 5,
           }}
         >
-          <span style={{ fontWeight: 700, fontSize: 26, color: c.red, letterSpacing: 0.5 }}>
+          <span style={{ fontWeight: 700, fontSize: 30, color: c.red }}>
             {section[0].toUpperCase() + section.slice(1)}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
@@ -122,43 +121,42 @@ export default function App() {
             </button>
           </div>
         </div>
-        {/* Responsive Content Box */}
-        <section
+        {/* Content */}
+        <div
           style={{
             flex: 1,
-            width: "100%",
             display: "flex",
             justifyContent: "center",
             alignItems: "flex-start",
-            background: c.bg,
             minHeight: 0,
-            minWidth: 0,
+            width: "100%",
+            background: c.bg,
           }}
         >
           <div
             style={{
               flex: 1,
-              maxWidth: 1024,
-              margin: "36px 36px 0 36px",
+              maxWidth: 720,
+              width: "100%",
+              margin: "38px 0 0 0",
               background: c.card,
-              borderRadius: 18,
+              borderRadius: 20,
               boxShadow: "0 2px 14px #0001",
-              minHeight: "64vh",
-              padding: "0 0 36px 0",
+              minHeight: "340px",
+              padding: "0",
               color: c.text,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              overflow: "hidden",
             }}
           >
-            <div style={{ padding: "40px 0", fontSize: 17, color: c.text }}>
+            <div style={{ fontSize: 17, color: c.text, padding: 30 }}>
               {section[0].toUpperCase() + section.slice(1)} section coming soon.
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
