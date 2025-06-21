@@ -1,38 +1,28 @@
-import vinetLogo from "./assets/logo.jpeg"; // Or your logo asset path
-
-type SidebarProps = {
-  selected: string;
-  onSelect: (s: string) => void;
-  darkMode: boolean;
-  colors: any;
-  user: { username: string; role: string } | null;
-  search: string;
-  setSearch: (s: string) => void;
-  onDarkMode: () => void;
-};
+import vinetLogo from "./assets/logo.jpeg"; // Use your logo asset
 
 export default function Sidebar({
   selected, onSelect, darkMode, colors, user, search, setSearch, onDarkMode,
-}: SidebarProps) {
+}: any) {
   return (
     <div
       style={{
-        width: 205,
+        width: 220,
         minHeight: "100vh",
         background: colors.sidebar,
         borderRight: `1.5px solid ${colors.border}`,
         display: "flex",
         flexDirection: "column",
-        paddingTop: 16,
+        paddingTop: 20,
+        alignItems: "flex-start",
       }}
     >
       {/* Logo */}
-      <div style={{ padding: "0 12px 20px 22px" }}>
+      <div style={{ padding: "0 0 22px 28px" }}>
         <img
           src={vinetLogo}
           alt="Vinet"
           style={{
-            width: 88,
+            width: 90,
             marginBottom: 4,
             filter: darkMode ? "brightness(0.86)" : "none",
           }}
@@ -40,29 +30,81 @@ export default function Sidebar({
       </div>
 
       {/* Menu */}
-      {user?.role === "admin" && (
-        <SidebarItem label="Unlinked Clients" icon="🔗" selected={selected === "unlinked"} onClick={() => onSelect("unlinked")} style={{ marginBottom: 12 }} />
-      )}
+      <SidebarItem
+        label="Unlinked Clients"
+        icon={<span style={{fontSize:18}}>🔗</span>}
+        selected={selected === "unlinked"}
+        onClick={() => onSelect("unlinked")}
+      />
+
+      <SidebarSectionSpacer />
+
       {(user?.role === "admin" || user?.role === "support") && (
-        <SidebarItem label="Support" icon="🛠️" selected={selected === "support"} onClick={() => onSelect("support")} />
+        <SidebarItem
+          label="Support"
+          icon={<span style={{fontSize:18}}>🛠️</span>}
+          selected={selected === "support"}
+          onClick={() => onSelect("support")}
+        />
       )}
       {(user?.role === "admin" || user?.role === "accounts") && (
-        <SidebarItem label="Accounts" icon="💳" selected={selected === "accounts"} onClick={() => onSelect("accounts")} />
+        <SidebarItem
+          label="Accounts"
+          icon={<span style={{fontSize:18}}>💳</span>}
+          selected={selected === "accounts"}
+          onClick={() => onSelect("accounts")}
+        />
       )}
       {(user?.role === "admin" || user?.role === "sales") && (
         <>
-          <SidebarItem label="Sales" icon="💼" selected={selected === "sales"} onClick={() => onSelect("sales")} />
-          <SidebarItem label="Leads" icon="📈" selected={selected === "leads"} onClick={() => onSelect("leads")} />
+          <SidebarItem
+            label="Sales"
+            icon={<span style={{fontSize:18}}>💼</span>}
+            selected={selected === "sales"}
+            onClick={() => onSelect("sales")}
+          />
+          <SidebarItem
+            label="Leads"
+            icon={<span style={{fontSize:18}}>📈</span>}
+            selected={selected === "leads"}
+            onClick={() => onSelect("leads")}
+          />
         </>
       )}
+
       {/* Admin-only */}
       {user?.role === "admin" && (
         <>
-          <SidebarItem label="Broadcast" icon="📢" selected={selected === "broadcast"} onClick={() => onSelect("broadcast")} />
-          <SidebarItem label="Auto Response" icon="⚡️" selected={selected === "autoresp"} onClick={() => onSelect("autoresp")} />
-          <SidebarItem label="Office Hours" icon="⏰" selected={selected === "office"} onClick={() => onSelect("office")} />
-          <SidebarItem label="System" icon="🛠️" selected={selected === "system"} onClick={() => onSelect("system")} />
-          <SidebarItem label="Add User" icon="➕" selected={selected === "adduser"} onClick={() => onSelect("adduser")} />
+          <SidebarItem
+            label="Broadcast"
+            icon={<span style={{fontSize:18}}>📢</span>}
+            selected={selected === "broadcast"}
+            onClick={() => onSelect("broadcast")}
+          />
+          <SidebarItem
+            label="Auto Response"
+            icon={<span style={{fontSize:18}}>⚡️</span>}
+            selected={selected === "autoresp"}
+            onClick={() => onSelect("autoresp")}
+          />
+          <SidebarItem
+            label="Office Hours"
+            icon={<span style={{fontSize:18}}>⏰</span>}
+            selected={selected === "office"}
+            onClick={() => onSelect("office")}
+          />
+          <SidebarItem
+            label="System"
+            icon={<span style={{fontSize:18}}>🛠️</span>}
+            selected={selected === "system"}
+            onClick={() => onSelect("system")}
+          />
+          <SidebarItem
+            label="Add User"
+            icon={<span style={{fontSize:18}}>➕</span>}
+            selected={selected === "adduser"}
+            onClick={() => onSelect("adduser")}
+          />
         </>
       )}
 
@@ -70,7 +112,7 @@ export default function Sidebar({
       <div style={{ flex: 1 }} />
 
       {/* Search and dark mode */}
-      <div style={{ padding: 18 }}>
+      <div style={{ padding: 18, width: "100%" }}>
         <input
           type="search"
           placeholder="Search…"
@@ -84,7 +126,9 @@ export default function Sidebar({
             background: colors.input,
             color: colors.inputText,
             fontSize: 15,
-            marginBottom: 10,
+            marginBottom: 12,
+            outline: "none",
+            boxSizing: "border-box",
           }}
         />
         <button
@@ -110,26 +154,31 @@ export default function Sidebar({
   );
 }
 
-function SidebarItem({ label, icon, selected, onClick, style }: any) {
+function SidebarSectionSpacer() {
+  return <div style={{ height: 16 }} />;
+}
+
+function SidebarItem({ label, icon, selected, onClick }: any) {
   return (
     <div
       onClick={onClick}
       style={{
-        padding: "9px 16px 9px 24px",
+        width: "100%",
+        padding: "11px 16px 11px 26px",
         fontWeight: 500,
         fontSize: 16,
-        color: selected ? "#fff" : undefined,
+        color: selected ? "#fff" : "#23262b",
         background: selected ? "#e2001a" : "none",
         borderRadius: 9,
         marginBottom: 1,
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
-        position: "relative",
-        ...style,
+        gap: 10,
+        transition: "background 0.2s, color 0.2s",
       }}
     >
-      <span style={{ marginRight: 14, fontSize: 16 }}>{icon}</span>
+      <span style={{ marginRight: 10 }}>{icon}</span>
       {label}
     </div>
   );
