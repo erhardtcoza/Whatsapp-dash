@@ -1,9 +1,14 @@
-// src/AccountsPage.tsx
-export default function AccountsPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function AccountsPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Accouns</h2>
-      <div>Accounts content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      AccountsPage section coming soon.
     </div>
   );
 }
