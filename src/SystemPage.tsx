@@ -1,9 +1,14 @@
-// src/SystemPage.tsx
-export default function SystemPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function SystemPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>System</h2>
-      <div>System content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      SystemPage section coming soon.
     </div>
   );
 }
