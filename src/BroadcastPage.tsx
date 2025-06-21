@@ -1,9 +1,14 @@
-// src/BroadcastPage.tsx
-export default function BroadcastPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function BroadcastPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Broadcast</h2>
-      <div>Broadcast content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      BroadcastPage section coming soon.
     </div>
   );
 }
