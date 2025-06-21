@@ -1,5 +1,5 @@
 type Props = { colors: any; darkMode: boolean };
-export default function SystemPage({ colors, darkMode }: Props) {
+export default function SystemPage({ colors }: Props) {
   return (
     <div style={{
       color: colors.text,
