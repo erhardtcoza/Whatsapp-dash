@@ -1,9 +1,14 @@
-// src/AutoResponsePage.tsx
-export default function AutoResponsePage() {
+type Props = { colors: any; darkMode: boolean };
+export default function AutoResponsePage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>AutoResponse</h2>
-      <div>AutoResponse content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      AutoResponsePage section coming soon.
     </div>
   );
 }
