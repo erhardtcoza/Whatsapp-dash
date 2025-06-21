@@ -1,9 +1,14 @@
-// src/OfficeHoursPage.tsx
-export default function OfficeHoursPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function OfficeHoursPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>OfficeHours</h2>
-      <div>OfficeHours content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      OfficeHoursPage section coming soon.
     </div>
   );
 }
