@@ -1,5 +1,5 @@
 type Props = { colors: any; darkMode: boolean };
-export default function UnlinkedClientsPage({ colors, darkMode }: Props) {
+export default function UnlinkedClientsPage({ colors }: Props) {
   return (
     <div style={{
       color: colors.text,
