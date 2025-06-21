@@ -1,9 +1,14 @@
-// src/SalesPage.tsx
-export default function SalesPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function SalesPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Sales</h2>
-      <div>Sales content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      SalesPage section coming soon.
     </div>
   );
 }
