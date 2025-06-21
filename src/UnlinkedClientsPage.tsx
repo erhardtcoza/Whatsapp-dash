@@ -1,9 +1,14 @@
-// src/UnlinkedClientsPage.tsx
-export default function UnlinkedClientsPage() {
+type Props = { colors: any; darkMode: boolean };
+export default function UnlinkedClientsPage({ colors, darkMode }: Props) {
   return (
-    <div style={{ padding: 40 }}>
-      <h2>UnlinkedClients</h2>
-      <div>UnlinkedClients content goes here...</div>
+    <div style={{
+      color: colors.text,
+      minHeight: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      UnlinkedClientsPage section coming soon.
     </div>
   );
 }
