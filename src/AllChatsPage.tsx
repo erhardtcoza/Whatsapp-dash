@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-export default function AllChatsPage({ colors }: any) {
+type Props = {
+  colors: any;
+  darkMode: boolean;
+  onSelectChat: (chat: any) => void;
+  selectedChat?: any;
+};
+
+export default function AllChatsPage({ colors, darkMode, onSelectChat, selectedChat }: Props) {
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -13,46 +20,102 @@ export default function AllChatsPage({ colors }: any) {
         if (!res.ok) throw new Error("Failed");
         return res.json();
       })
-      .then(data => {
-        setChats(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to fetch chats.");
-        setLoading(false);
-      });
+      .then(data => { setChats(data); setLoading(false); })
+      .catch(() => { setError("Could not load chats"); setLoading(false); });
   }, []);
 
-  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
-  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
-
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>All Chats</h2>
-      <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
-        <thead>
-          <tr style={{ background: colors.bg, color: colors.sub }}>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Phone</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Unread</th>
-          </tr>
-        </thead>
-        <tbody>
-          {chats.map((c, i) => (
-            <tr key={c.from_number || i}>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.tag || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.red }}>{c.unread_count || 0}</td>
+    <div style={{ padding: "36px 22px", width: "100%" }}>
+      <h2 style={{ color: colors.red, fontWeight: 700, marginBottom: 18 }}>All Chats</h2>
+      {error ? (
+        <div style={{ color: colors.red }}>{error}</div>
+      ) : loading ? (
+        <div style={{ color: colors.text }}>Loading...</div>
+      ) : chats.length === 0 ? (
+        <div style={{ color: colors.sub }}>No chats found.</div>
+      ) : (
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            background: colors.card,
+            color: colors.text,
+            borderRadius: 10,
+            boxShadow: "0 1px 7px #0001",
+            overflow: "hidden",
+          }}
+        >
+          <thead>
+            <tr style={{ background: colors.input }}>
+              <th style={th}>Number</th>
+              <th style={th}>Name</th>
+              <th style={th}>Email</th>
+              <th style={th}>Last Message</th>
+              <th style={th}>Unread</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {chats.map((c) => (
+              <tr
+                key={c.from_number}
+                onClick={() => onSelectChat(c)}
+                style={{
+                  cursor: "pointer",
+                  background:
+                    selectedChat?.from_number === c.from_number
+                      ? darkMode
+                        ? "#332"
+                        : "#fff4f6"
+                      : undefined,
+                  borderLeft:
+                    selectedChat?.from_number === c.from_number
+                      ? `5px solid ${colors.red}`
+                      : undefined,
+                }}
+              >
+                <td style={td}>{c.from_number}</td>
+                <td style={td}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
+                <td style={td}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
+                <td style={td}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
+                <td style={td}>
+                  {c.unread_count > 0 ? (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        minWidth: 18,
+                        padding: "0 6px",
+                        borderRadius: 10,
+                        background: colors.badge,
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        textAlign: "center",
+                      }}
+                    >
+                      {c.unread_count}
+                    </span>
+                  ) : (
+                    <span style={{ color: colors.sub }}>0</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
+
+const th = {
+  padding: "10px 8px",
+  textAlign: "left" as const,
+  fontWeight: 700,
+  fontSize: 15,
+  borderBottom: "2px solid #eaeaea",
+};
+const td = {
+  padding: "10px 8px",
+  fontSize: 15,
+  borderBottom: "1px solid #eaeaea",
+};
