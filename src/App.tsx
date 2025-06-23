@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
+// src/App.tsx
+
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
 import UnlinkedClientsPage from "./UnlinkedClientsPage";
 import AllChatsPage from "./AllChatsPage";
-import ChatPanel from "./ChatPanel";
 
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
+
   const c = {
     bg: "#f7f7fa",
     card: "#fff",
@@ -44,7 +46,6 @@ export default function App() {
 
   const [section, setSection] = useState("unlinked");
   const [search, setSearch] = useState("");
-  const [selectedChat, setSelectedChat] = useState<any>(null);
 
   const topBar = (
     <div
@@ -87,22 +88,15 @@ export default function App() {
     return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
 
-  let content: React.ReactNode = null;
+  // ---- Content Switch ----
+  let content: JSX.Element | null = null;
   if (section === "unlinked") {
     content = (
-      <UnlinkedClientsPage
-        colors={c}
-        onSelectChat={setSelectedChat}
-        selectedChat={selectedChat}
-      />
+      <UnlinkedClientsPage colors={c} />
     );
   } else if (section === "allchats") {
     content = (
-      <AllChatsPage
-        colors={c}
-        onSelectChat={setSelectedChat}
-        selectedChat={selectedChat}
-      />
+      <AllChatsPage colors={c} />
     );
   } else {
     content = (
@@ -116,11 +110,9 @@ export default function App() {
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
       <Sidebar
         selected={section}
-        onSelect={s => {
-          setSection(s);
-          setSelectedChat(null);
-        }}
+        onSelect={setSection}
         colors={c}
+        user={user}
         search={search}
         setSearch={setSearch}
       />
@@ -149,15 +141,7 @@ export default function App() {
             margin: "24px auto 40px auto",
           }}
         >
-          {selectedChat ? (
-            <ChatPanel
-              chat={selectedChat}
-              colors={c}
-              onClose={() => setSelectedChat(null)}
-            />
-          ) : (
-            content
-          )}
+          {content}
         </div>
       </div>
     </div>
