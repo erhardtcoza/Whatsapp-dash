@@ -3,51 +3,42 @@ import { useEffect, useState } from "react";
 
 type Props = {
   colors: any;
-  darkMode: boolean;
   onSelectChat: (chat: any) => void;
   selectedChat?: any;
 };
 
-export default function UnlinkedClientsPage({ colors, darkMode, onSelectChat, selectedChat }: Props) {
-  const [clients, setClients] = useState<any[]>([]);
+export default function AllChatsPage({ colors, onSelectChat, selectedChat }: Props) {
+  const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE}/api/unlinked-clients`)
-      .then((res) => res.json())
-      .then((data) => {
-        setClients(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to fetch unlinked clients.");
-        setLoading(false);
-      });
+    fetch(`${API_BASE}/api/chats`)
+      .then(res => res.json())
+      .then(data => { setChats(data); setLoading(false); })
+      .catch(() => { setError("Could not load chats"); setLoading(false); });
   }, []);
 
   if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
   if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
-
-  if (!clients.length) {
-    return <div style={{ padding: 48, color: colors.sub }}>No unlinked clients found.</div>;
-  }
+  if (!chats.length) return <div style={{ padding: 48, color: colors.sub }}>No chats found.</div>;
 
   return (
     <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>Unlinked Clients</h2>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>All Chats</h2>
       <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
         <thead>
           <tr style={{ background: colors.bg, color: colors.sub }}>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Phone</th>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Number</th>
             <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
             <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
             <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
           </tr>
         </thead>
         <tbody>
-          {clients.map((c, i) => (
+          {chats.map((c, i) => (
             <tr
               key={c.from_number || i}
               onClick={() => onSelectChat(c)}
@@ -55,9 +46,7 @@ export default function UnlinkedClientsPage({ colors, darkMode, onSelectChat, se
                 cursor: "pointer",
                 background:
                   selectedChat?.from_number === c.from_number
-                    ? darkMode
-                      ? "#332"
-                      : "#fff4f6"
+                    ? "#fff4f6"
                     : undefined,
                 borderLeft:
                   selectedChat?.from_number === c.from_number
@@ -68,7 +57,8 @@ export default function UnlinkedClientsPage({ colors, darkMode, onSelectChat, se
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_msg ? new Date(Number(c.last_msg)).toLocaleString() : <span style={{ color: colors.sub }}>—</span>}</td>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.tag || <span style={{ color: colors.sub }}>—</span>}</td>
             </tr>
           ))}
         </tbody>
