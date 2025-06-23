@@ -1,19 +1,94 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
 import AllChatsPage from "./AllChatsPage";
 import ChatPanel from "./ChatPanel";
 
+// --- App (full working) ---
 export default function App() {
-  // ...your existing color/theme/user code...
+  // Color palette (Vinet brand)
+  const c = {
+    bg: "#f7f7fa",
+    card: "#fff",
+    border: "#eaeaea",
+    text: "#23262b",
+    sub: "#555",
+    red: "#e2001a",
+    sidebar: "#f7f7fa",
+    sidebarSel: "#e2001a",
+    sidebarTxt: "#23262b",
+    input: "#fff",
+    inputText: "#23262b",
+    th: "#555",
+    td: "#223",
+    badge: "#e2001a",
+    tag: "#888",
+    tagTxt: "#fff",
+    msgIn: "#fff",
+    msgOut: "#e2001a",
+  };
 
+  useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
+
+  // Auth state
+  const [user, setUser] = useState<{ username: string, role: string } | null>(() => {
+    const u = localStorage.getItem("wa-user");
+    return u ? JSON.parse(u) : null;
+  });
+  function handleLoginSuccess(userObj: any) {
+    setUser(userObj);
+    localStorage.setItem("wa-user", JSON.stringify(userObj));
+  }
+  function handleLogout() {
+    setUser(null);
+    localStorage.removeItem("wa-user");
+  }
+
+  // Main UI state
   const [section, setSection] = useState("allchats");
   const [search, setSearch] = useState("");
   const [selectedChat, setSelectedChat] = useState<any>(null);
 
-  // ...your top bar, user auth logic, etc...
+  // Top bar
+  const topBar = (
+    <div
+      style={{
+        width: "100%",
+        padding: "14px 30px 12px 205px",
+        background: c.card,
+        borderBottom: `2px solid ${c.red}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 15,
+      }}
+    >
+      <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
+        {section[0].toUpperCase() + section.slice(1)}
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
+          {user?.username} ({user?.role})
+        </span>
+        <button
+          onClick={handleLogout}
+          style={{
+            background: c.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "7px 16px",
+            fontWeight: "bold",
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  );
 
-  let content = null;
+  // Content
+  let content: JSX.Element | null = null;
   if (!user) {
     content = <Login onLogin={handleLoginSuccess} colors={c} />;
   } else if (selectedChat) {
@@ -33,7 +108,6 @@ export default function App() {
       />
     );
   } else {
-    // ...other sections if you have
     content = <div style={{ padding: 40, color: c.text }}>Section coming soon.</div>;
   }
 
@@ -58,8 +132,25 @@ export default function App() {
         background: c.bg,
         marginLeft: 190,
       }}>
-        {/* TopBar here */}
-        {content}
+        {topBar}
+        <div
+          style={{
+            flex: 1,
+            width: "96%",
+            maxWidth: 980,
+            minHeight: 420,
+            background: c.card,
+            borderRadius: 16,
+            boxShadow: "0 2px 14px #0001",
+            padding: "0 0 26px 0",
+            color: c.text,
+            display: "flex",
+            flexDirection: "column",
+            margin: "24px auto 40px auto",
+          }}
+        >
+          {content}
+        </div>
       </div>
     </div>
   );
