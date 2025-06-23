@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "./config";
 
 export default function SupportPage({ colors }: any) {
   const [chats, setChats] = useState<any[]>([]);
@@ -6,7 +7,7 @@ export default function SupportPage({ colors }: any) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("https://w-api.vinetdns.co.za/api/chats?department=support")
+    fetch(`${API_BASE}/api/support-chats`)
       .then(res => {
         if (!res.ok) throw new Error("Failed");
         return res.json();
