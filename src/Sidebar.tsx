@@ -5,7 +5,6 @@ export default function Sidebar({
   onSelect,
   darkMode,
   colors,
-  user,
   search,
   setSearch,
   onDarkMode,
