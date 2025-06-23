@@ -1,68 +1,168 @@
-import { API_BASE } from "./config";
 import { useEffect, useState } from "react";
+import Sidebar from "./Sidebar";
+import Login from "./Login";
+import UnlinkedClientsPage from "./UnlinkedClientsPage";
+import AllChatsPage from "./AllChatsPage";
+import ChatPanel from "./ChatPanel";
 
-type Props = {
-  colors: any;
-  onSelectChat: (chat: any) => void;
-  selectedChat?: any;
-};
+export default function App() {
+  useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
 
-export default function AllChatsPage({ colors, onSelectChat, selectedChat }: Props) {
-  const [chats, setChats] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Color palette
+  const c = {
+    bg: "#f7f7fa",
+    card: "#fff",
+    border: "#eaeaea",
+    text: "#23262b",
+    sub: "#555",
+    red: "#e2001a",
+    sidebar: "#f7f7fa",
+    sidebarSel: "#e2001a",
+    sidebarTxt: "#23262b",
+    input: "#fff",
+    inputText: "#23262b",
+    th: "#555",
+    td: "#223",
+    badge: "#e2001a",
+    tag: "#888",
+    tagTxt: "#fff",
+    msgIn: "#fff",
+    msgOut: "#e2001a",
+  };
 
-  useEffect(() => {
-    setLoading(true);
-    fetch(`${API_BASE}/api/chats`)
-      .then(res => res.json())
-      .then(data => { setChats(data); setLoading(false); })
-      .catch(() => { setError("Could not load chats"); setLoading(false); });
-  }, []);
+  const [user, setUser] = useState<{ username: string, role: string } | null>(() => {
+    const u = localStorage.getItem("wa-user");
+    return u ? JSON.parse(u) : null;
+  });
 
-  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
-  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
-  if (!chats.length) return <div style={{ padding: 48, color: colors.sub }}>No chats found.</div>;
+  function handleLoginSuccess(userObj: any) {
+    setUser(userObj);
+    localStorage.setItem("wa-user", JSON.stringify(userObj));
+  }
+  function handleLogout() {
+    setUser(null);
+    localStorage.removeItem("wa-user");
+  }
+
+  const [section, setSection] = useState("unlinked");
+  const [search, setSearch] = useState("");
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+
+  // Top bar
+  const topBar = (
+    <div
+      style={{
+        width: "100%",
+        padding: "14px 30px 12px 205px",
+        background: c.card,
+        borderBottom: `2px solid ${c.red}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 15,
+      }}
+    >
+      <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
+        {section[0].toUpperCase() + section.slice(1)}
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
+          {user?.username} ({user?.role})
+        </span>
+        <button
+          onClick={handleLogout}
+          style={{
+            background: c.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "7px 16px",
+            fontWeight: "bold",
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+
+  if (!user) {
+    return <Login onLogin={handleLoginSuccess} colors={c} />;
+  }
+
+  // Main section content
+  let content: JSX.Element | null = null;
+  if (section === "unlinked") {
+    content = (
+      <UnlinkedClientsPage
+        colors={c}
+      />
+    );
+  } else if (section === "allchats") {
+    content = (
+      <AllChatsPage
+        colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
+      />
+    );
+  } else {
+    content = (
+      <div style={{ padding: 40, color: c.text }}>
+        {section[0].toUpperCase() + section.slice(1)} section coming soon.
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>All Chats</h2>
-      <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
-        <thead>
-          <tr style={{ background: colors.bg, color: colors.sub }}>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Number</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
-          </tr>
-        </thead>
-        <tbody>
-          {chats.map((c, i) => (
-            <tr
-              key={c.from_number || i}
-              onClick={() => onSelectChat(c)}
-              style={{
-                cursor: "pointer",
-                background:
-                  selectedChat?.from_number === c.from_number
-                    ? "#fff4f6"
-                    : undefined,
-                borderLeft:
-                  selectedChat?.from_number === c.from_number
-                    ? `5px solid ${colors.red}`
-                    : undefined,
-              }}
-            >
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.tag || <span style={{ color: colors.sub }}>—</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
+      <Sidebar
+        selected={section}
+        onSelect={s => {
+          setSection(s);
+          setSelectedChat(null);
+        }}
+        colors={c}
+        user={user}
+        search={search}
+        setSearch={setSearch}
+      />
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        background: c.bg,
+        marginLeft: 190,
+      }}>
+        {topBar}
+        <div
+          style={{
+            flex: 1,
+            width: "96%",
+            maxWidth: 980,
+            minHeight: 420,
+            background: c.card,
+            borderRadius: 16,
+            boxShadow: "0 2px 14px #0001",
+            padding: "0 0 26px 0",
+            color: c.text,
+            display: "flex",
+            flexDirection: "column",
+            margin: "24px auto 40px auto",
+          }}
+        >
+          {selectedChat ? (
+            <ChatPanel
+              chat={selectedChat}
+              colors={c}
+              onClose={() => setSelectedChat(null)}
+            />
+          ) : (
+            content
+          )}
+        </div>
+      </div>
     </div>
   );
 }
