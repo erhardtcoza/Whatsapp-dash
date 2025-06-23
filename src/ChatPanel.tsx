@@ -6,28 +6,29 @@ type Props = {
 
 export default function ChatPanel({ chat, colors, onClose }: Props) {
   if (!chat) return null;
-
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ color: colors.red, marginBottom: 20 }}>
+    <div style={{ padding: 32 }}>
+      <h2 style={{ color: colors.red, fontWeight: 600, fontSize: 22 }}>
         Chat with {chat.name || chat.from_number}
       </h2>
       <button
+        onClick={onClose}
         style={{
+          marginTop: 16,
           background: colors.red,
           color: "#fff",
           border: "none",
-          borderRadius: 7,
-          padding: "7px 14px",
+          borderRadius: 6,
+          padding: "7px 18px",
           fontWeight: 700,
-          marginBottom: 16,
+          fontSize: 15,
+          cursor: "pointer",
         }}
-        onClick={onClose}
       >
         Close
       </button>
-      <div>
-        <div style={{ color: colors.text }}>Chat coming soon…</div>
+      <div style={{ marginTop: 24, color: colors.sub }}>
+        (Chat messages and reply box coming soon.)
       </div>
     </div>
   );
