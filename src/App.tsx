@@ -7,7 +7,7 @@ import SupportPage from "./SupportPage";
 import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
 import LeadsPage from "./LeadsPage";
-// ...other imports as needed
+import ChatPanel from "./ChatPanel";
 import "./App.css";
 
 export default function App() {
@@ -33,6 +33,7 @@ export default function App() {
 
   const [section, setSection] = useState("unlinked");
   const [search, setSearch] = useState("");
+  const [selectedChat, setSelectedChat] = useState<any | null>(null);
 
   const c = darkMode
     ? {
@@ -68,7 +69,9 @@ export default function App() {
       }}
     >
       <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
-        {section[0].toUpperCase() + section.slice(1).replace(/^\w/, m => m.toUpperCase())}
+        {selectedChat
+          ? (selectedChat.name || selectedChat.from_number)
+          : section[0].toUpperCase() + section.slice(1).replace(/^\w/, m => m.toUpperCase())}
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
         <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
@@ -129,13 +132,24 @@ export default function App() {
             margin: "24px auto 40px auto",
           }}
         >
-          {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
-          {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
-          {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
-          {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} />}
-          {section === "sales" && <SalesPage colors={c} darkMode={darkMode} />}
-          {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} />}
-          {/* Add other pages as needed */}
+          {selectedChat ? (
+            <ChatPanel
+              chat={selectedChat}
+              colors={c}
+              darkMode={darkMode}
+              onClose={() => setSelectedChat(null)}
+            />
+          ) : (
+            <>
+              {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {section === "support" && <SupportPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {section === "sales" && <SalesPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {/* Add other pages as needed */}
+            </>
+          )}
         </div>
       </div>
     </div>
