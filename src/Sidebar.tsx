@@ -1,4 +1,3 @@
-import React from "react";
 import vinetLogo from "./assets/logo.jpeg";
 
 type Props = {
