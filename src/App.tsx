@@ -141,12 +141,54 @@ export default function App() {
             />
           ) : (
             <>
-              {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
-              {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
-              {section === "support" && <SupportPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
-              {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
-              {section === "sales" && <SalesPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
-              {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} onSelectChat={setSelectedChat} />}
+              {section === "unlinked" && (
+                <UnlinkedClientsPage
+                  colors={c}
+                  darkMode={darkMode}
+                  onSelectChat={setSelectedChat}
+                  selectedChat={selectedChat}
+                />
+              )}
+              {section === "allchats" && (
+                <AllChatsPage
+                  colors={c}
+                  darkMode={darkMode}
+                  onSelectChat={setSelectedChat}
+                  selectedChat={selectedChat}
+                />
+              )}
+              {section === "support" && (
+                <SupportPage
+                  colors={c}
+                  darkMode={darkMode}
+                  onSelectChat={setSelectedChat}
+                  selectedChat={selectedChat}
+                />
+              )}
+              {section === "accounts" && (
+                <AccountsPage
+                  colors={c}
+                  darkMode={darkMode}
+                  onSelectChat={setSelectedChat}
+                  selectedChat={selectedChat}
+                />
+              )}
+              {section === "sales" && (
+                <SalesPage
+                  colors={c}
+                  darkMode={darkMode}
+                  onSelectChat={setSelectedChat}
+                  selectedChat={selectedChat}
+                />
+              )}
+              {section === "leads" && (
+                <LeadsPage
+                  colors={c}
+                  darkMode={darkMode}
+                  onSelectChat={setSelectedChat}
+                  selectedChat={selectedChat}
+                />
+              )}
               {/* Add other pages as needed */}
             </>
           )}
