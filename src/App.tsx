@@ -7,7 +7,7 @@ import SupportPage from "./SupportPage";
 import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
 import LeadsPage from "./LeadsPage";
-// ... (import others as needed)
+// ...other imports as needed
 import "./App.css";
 
 export default function App() {
@@ -129,13 +129,13 @@ export default function App() {
             margin: "24px auto 40px auto",
           }}
         >
-          {section === "unlinked" && <UnlinkedClientsPage colors={c} />}
-          {section === "allchats" && <AllChatsPage colors={c} />}
-          {section === "support" && <SupportPage colors={c} />}
-          {section === "accounts" && <AccountsPage colors={c} />}
-          {section === "sales" && <SalesPage colors={c} />}
-          {section === "leads" && <LeadsPage colors={c} />}
-          {/* Add the rest as needed */}
+          {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
+          {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
+          {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
+          {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} />}
+          {section === "sales" && <SalesPage colors={c} darkMode={darkMode} />}
+          {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} />}
+          {/* Add other pages as needed */}
         </div>
       </div>
     </div>
