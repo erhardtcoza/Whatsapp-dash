@@ -1,15 +1,22 @@
 import { API_BASE } from "./config";
 import { useEffect, useState } from "react";
 
-export default function UnlinkedClientsPage({ colors }: any) {
+type Props = {
+  colors: any;
+  darkMode: boolean;
+  onSelectChat: (chat: any) => void;
+  selectedChat?: any;
+};
+
+export default function UnlinkedClientsPage({ colors, darkMode, onSelectChat, selectedChat }: Props) {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setLoading(true);
-fetch(`${API_BASE}/api/unlinked-clients`)
-  .then((res) => res.json())
+    fetch(`${API_BASE}/api/unlinked-clients`)
+      .then((res) => res.json())
       .then((data) => {
         setClients(data);
         setLoading(false);
@@ -41,7 +48,23 @@ fetch(`${API_BASE}/api/unlinked-clients`)
         </thead>
         <tbody>
           {clients.map((c, i) => (
-            <tr key={c.from_number || i}>
+            <tr
+              key={c.from_number || i}
+              onClick={() => onSelectChat(c)}
+              style={{
+                cursor: "pointer",
+                background:
+                  selectedChat?.from_number === c.from_number
+                    ? darkMode
+                      ? "#332"
+                      : "#fff4f6"
+                    : undefined,
+                borderLeft:
+                  selectedChat?.from_number === c.from_number
+                    ? `5px solid ${colors.red}`
+                    : undefined,
+              }}
+            >
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
