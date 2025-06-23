@@ -1,20 +1,54 @@
+// src/AllChatsPage.tsx
+
+import { API_BASE } from "./config";
+import { useEffect, useState } from "react";
 
 type Props = {
   colors: any;
-  onSelectChat: (chat: any) => void;
-  selectedChat?: any;
 };
 
-export default function AllChatsPage({ colors, onSelectChat, selectedChat }: Props) {
-  // Dummy content for now. Replace with real API/data as needed.
+export default function AllChatsPage({ colors }: Props) {
+  const [chats, setChats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API_BASE}/api/chats`)
+      .then(res => res.json())
+      .then(data => { setChats(data); setLoading(false); })
+      .catch(() => { setError("Could not load chats"); setLoading(false); });
+  }, []);
+
+  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
+  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
+  if (!chats.length) return <div style={{ padding: 48, color: colors.sub }}>No chats found.</div>;
+
   return (
     <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
-        All Chats
-      </h2>
-      <div style={{ color: colors.sub }}>
-        (No chats yet. This is a placeholder page.)
-      </div>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>All Chats</h2>
+      <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
+        <thead>
+          <tr style={{ background: colors.bg, color: colors.sub }}>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Number</th>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
+            <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
+          </tr>
+        </thead>
+        <tbody>
+          {chats.map((c, i) => (
+            <tr key={c.from_number || i}>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
+              <td style={{ padding: "10px 18px", color: colors.text }}>{c.tag || <span style={{ color: colors.sub }}>—</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
