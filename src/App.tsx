@@ -7,7 +7,6 @@ import ChatPanel from "./ChatPanel";
 
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
-
   const c = {
     bg: "#f7f7fa",
     card: "#fff",
@@ -85,7 +84,7 @@ export default function App() {
   );
 
   if (!user) {
-    return <Login onLogin={handleLoginSuccess} />;
+    return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
 
   let content: React.ReactNode = null;
