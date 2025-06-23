@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "./config";
 
-export default function SupportPage({ colors }: any) {
+type Props = {
+  colors: any;
+  darkMode: boolean;
+  onSelectChat: (chat: any) => void;
+  selectedChat?: any;
+};
+
+export default function AccountsPage({ colors, darkMode, onSelectChat, selectedChat }: Props) {
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("https://w-api.vinetdns.co.za/api/chats?department=accounts")
+    setLoading(true);
+    fetch(`${API_BASE}/api/accounts-chats`)
       .then(res => {
         if (!res.ok) throw new Error("Failed");
         return res.json();
@@ -16,14 +25,14 @@ export default function SupportPage({ colors }: any) {
   }, []);
 
   return (
-    <div style={{ padding: "38px 36px", width: "100%" }}>
-      <h2 style={{ color: colors.red, fontWeight: 700, marginBottom: 20 }}>Support Chats</h2>
+    <div style={{ padding: "36px 22px", width: "100%" }}>
+      <h2 style={{ color: colors.red, fontWeight: 700, marginBottom: 18 }}>Accounts Chats</h2>
       {error ? (
-        <div style={{ color: "red" }}>{error}</div>
+        <div style={{ color: colors.red }}>{error}</div>
       ) : loading ? (
         <div style={{ color: colors.text }}>Loading...</div>
       ) : chats.length === 0 ? (
-        <div style={{ color: colors.sub }}>No open support chats.</div>
+        <div style={{ color: colors.sub }}>No open accounts chats.</div>
       ) : (
         <table
           style={{
@@ -38,37 +47,35 @@ export default function SupportPage({ colors }: any) {
         >
           <thead>
             <tr style={{ background: colors.input }}>
-              <th style={th}>Name</th>
               <th style={th}>Number</th>
+              <th style={th}>Name</th>
               <th style={th}>Email</th>
               <th style={th}>Last Message</th>
-              <th style={th}>Action</th>
             </tr>
           </thead>
           <tbody>
             {chats.map((c) => (
-              <tr key={c.from_number}>
-                <td style={td}>{c.name || <span style={{ color: colors.sub }}>N/A</span>}</td>
+              <tr
+                key={c.from_number}
+                onClick={() => onSelectChat(c)}
+                style={{
+                  cursor: "pointer",
+                  background:
+                    selectedChat?.from_number === c.from_number
+                      ? darkMode
+                        ? "#332"
+                        : "#fff4f6"
+                      : undefined,
+                  borderLeft:
+                    selectedChat?.from_number === c.from_number
+                      ? `5px solid ${colors.red}`
+                      : undefined,
+                }}
+              >
                 <td style={td}>{c.from_number}</td>
-                <td style={td}>{c.email || <span style={{ color: colors.sub }}>N/A</span>}</td>
-                <td style={td}>{c.last_message || ""}</td>
-                <td style={td}>
-                  <button
-                    style={{
-                      background: colors.red,
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 6,
-                      padding: "5px 14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontSize: 14,
-                    }}
-                    onClick={() => alert("Open chat/handle reply here")}
-                  >
-                    Open
-                  </button>
-                </td>
+                <td style={td}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
+                <td style={td}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
+                <td style={td}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
               </tr>
             ))}
           </tbody>
