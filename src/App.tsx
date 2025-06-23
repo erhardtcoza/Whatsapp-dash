@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
 import UnlinkedClientsPage from "./UnlinkedClientsPage";
@@ -9,7 +8,6 @@ import ChatPanel from "./ChatPanel";
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
 
-  // Color palette
   const c = {
     bg: "#f7f7fa",
     card: "#fff",
@@ -49,7 +47,6 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [selectedChat, setSelectedChat] = useState<any>(null);
 
-  // Top bar
   const topBar = (
     <div
       style={{
@@ -88,15 +85,16 @@ export default function App() {
   );
 
   if (!user) {
-    return <Login onLogin={handleLoginSuccess} colors={c} />;
+    return <Login onLogin={handleLoginSuccess} />;
   }
 
-  // Main section content
-  let content: JSX.Element | null = null;
+  let content: React.ReactNode = null;
   if (section === "unlinked") {
     content = (
       <UnlinkedClientsPage
         colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
       />
     );
   } else if (section === "allchats") {
@@ -124,7 +122,6 @@ export default function App() {
           setSelectedChat(null);
         }}
         colors={c}
-        user={user}
         search={search}
         setSearch={setSearch}
       />
