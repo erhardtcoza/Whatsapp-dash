@@ -45,6 +45,12 @@ export default function Sidebar({
         onClick={() => onSelect("unlinked")}
       />
       <SidebarItem
+        label="All Chats"
+        icon="💬"
+        selected={selected === "allchats"}
+        onClick={() => onSelect("allchats")}
+      />
+      <SidebarItem
         label="Support"
         icon="🛠️"
         selected={selected === "support"}
