@@ -1,3 +1,4 @@
+import { API_BASE } from "./config";
 import { useEffect, useState } from "react";
 
 export default function UnlinkedClientsPage({ colors }: any) {
@@ -7,8 +8,8 @@ export default function UnlinkedClientsPage({ colors }: any) {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/unlinked-clients")
-      .then((res) => res.json())
+fetch(`${API_BASE}/api/unlinked-clients`)
+  .then((res) => res.json())
       .then((data) => {
         setClients(data);
         setLoading(false);
