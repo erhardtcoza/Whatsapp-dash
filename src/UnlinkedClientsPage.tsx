@@ -7,7 +7,7 @@ type UnlinkedClient = {
   email: string;
 };
 
-export default function UnlinkedClientsPage({ colors, darkMode }: any) {
+export default function UnlinkedClientsPage({ colors }: any) {
   const [clients, setClients] = useState<UnlinkedClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
