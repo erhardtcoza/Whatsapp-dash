@@ -6,22 +6,39 @@ import AllChatsPage from "./AllChatsPage";
 import SupportPage from "./SupportPage";
 import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
-import LeadsPage from "./LeadsPage";
 import ChatPanel from "./ChatPanel";
-import "./App.css";
+// ...import other pages as needed
 
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
-  useEffect(() => {
-    document.body.style.background = darkMode ? "#1a1d22" : "#f7f7fa";
-    localStorage.setItem("wa-dark", darkMode ? "1" : "0");
-  }, [darkMode]);
+
+  // --- Simple light mode colors ---
+  const c = {
+    bg: "#f7f7fa",
+    card: "#fff",
+    border: "#eaeaea",
+    text: "#23262b",
+    sub: "#555",
+    red: "#e2001a",
+    sidebar: "#f7f7fa",
+    sidebarSel: "#e2001a",
+    sidebarTxt: "#23262b",
+    input: "#fff",
+    inputText: "#23262b",
+    th: "#555",
+    td: "#223",
+    badge: "#e2001a",
+    tag: "#888",
+    tagTxt: "#fff",
+    msgIn: "#fff",
+    msgOut: "#e2001a",
+  };
 
   const [user, setUser] = useState<{ username: string, role: string } | null>(() => {
     const u = localStorage.getItem("wa-user");
     return u ? JSON.parse(u) : null;
   });
+
   function handleLoginSuccess(userObj: any) {
     setUser(userObj);
     localStorage.setItem("wa-user", JSON.stringify(userObj));
@@ -33,30 +50,9 @@ export default function App() {
 
   const [section, setSection] = useState("unlinked");
   const [search, setSearch] = useState("");
-  const [selectedChat, setSelectedChat] = useState<any | null>(null);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
 
-  const c = darkMode
-    ? {
-        bg: "#1a1d22", card: "#23262b", border: "#23262b",
-        text: "#f6f7fa", sub: "#bfc1c7", red: "#e2001a",
-        sidebar: "#23262b", sidebarSel: "#e2001a", sidebarTxt: "#fff",
-        input: "#262931", inputText: "#fff", th: "#ccd0da", td: "#eee",
-        badge: "#e2001a", tag: "#555", tagTxt: "#fff",
-        msgIn: "#262931", msgOut: "#e2001a",
-      }
-    : {
-        bg: "#f7f7fa", card: "#fff", border: "#eaeaea",
-        text: "#23262b", sub: "#555", red: "#e2001a",
-        sidebar: "#f7f7fa", sidebarSel: "#e2001a", sidebarTxt: "#23262b",
-        input: "#fff", inputText: "#23262b", th: "#555", td: "#223",
-        badge: "#e2001a", tag: "#888", tagTxt: "#fff",
-        msgIn: "#fff", msgOut: "#e2001a",
-      };
-
-  if (!user) {
-    return <Login onLogin={handleLoginSuccess} colors={c} />;
-  }
-
+  // TopBar
   const topBar = (
     <div
       style={{
@@ -69,13 +65,11 @@ export default function App() {
       }}
     >
       <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
-        {selectedChat
-          ? (selectedChat.name || selectedChat.from_number)
-          : section[0].toUpperCase() + section.slice(1).replace(/^\w/, m => m.toUpperCase())}
+        {section[0].toUpperCase() + section.slice(1)}
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
         <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
-          {user.username} ({user.role})
+          {user?.username} ({user?.role})
         </span>
         <button
           onClick={handleLogout}
@@ -96,16 +90,73 @@ export default function App() {
     </div>
   );
 
+  if (!user) {
+    return <Login onLogin={handleLoginSuccess} colors={c} />;
+  }
+
+  // --- Main content switching logic ---
+  let content: JSX.Element | null = null;
+  if (section === "unlinked") {
+    content = (
+      <UnlinkedClientsPage
+        colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
+      />
+    );
+  } else if (section === "allchats") {
+    content = (
+      <AllChatsPage
+        colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
+      />
+    );
+  } else if (section === "support") {
+    content = (
+      <SupportPage
+        colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
+      />
+    );
+  } else if (section === "accounts") {
+    content = (
+      <AccountsPage
+        colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
+      />
+    );
+  } else if (section === "sales") {
+    content = (
+      <SalesPage
+        colors={c}
+        onSelectChat={setSelectedChat}
+        selectedChat={selectedChat}
+      />
+    );
+  } else {
+    content = (
+      <div style={{ padding: 40, color: c.text }}>
+        {section[0].toUpperCase() + section.slice(1)} section coming soon.
+      </div>
+    );
+  }
+
+  // --- Layout ---
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
       <Sidebar
         selected={section}
-        onSelect={setSection}
-        darkMode={darkMode}
+        onSelect={s => {
+          setSection(s);
+          setSelectedChat(null);
+        }}
         colors={c}
+        user={user}
         search={search}
         setSearch={setSearch}
-        onDarkMode={() => setDarkMode((d) => !d)}
       />
       <div style={{
         flex: 1,
@@ -120,7 +171,7 @@ export default function App() {
           style={{
             flex: 1,
             width: "96%",
-            maxWidth: 880,
+            maxWidth: 980,
             minHeight: 420,
             background: c.card,
             borderRadius: 16,
@@ -132,65 +183,15 @@ export default function App() {
             margin: "24px auto 40px auto",
           }}
         >
+          {/* Show chat if selected, otherwise show the list/content */}
           {selectedChat ? (
             <ChatPanel
               chat={selectedChat}
               colors={c}
-              darkMode={darkMode}
               onClose={() => setSelectedChat(null)}
             />
           ) : (
-            <>
-              {section === "unlinked" && (
-                <UnlinkedClientsPage
-                  colors={c}
-                  darkMode={darkMode}
-                  onSelectChat={setSelectedChat}
-                  selectedChat={selectedChat}
-                />
-              )}
-              {section === "allchats" && (
-                <AllChatsPage
-                  colors={c}
-                  darkMode={darkMode}
-                  onSelectChat={setSelectedChat}
-                  selectedChat={selectedChat}
-                />
-              )}
-              {section === "support" && (
-                <SupportPage
-                  colors={c}
-                  darkMode={darkMode}
-                  onSelectChat={setSelectedChat}
-                  selectedChat={selectedChat}
-                />
-              )}
-              {section === "accounts" && (
-                <AccountsPage
-                  colors={c}
-                  darkMode={darkMode}
-                  onSelectChat={setSelectedChat}
-                  selectedChat={selectedChat}
-                />
-              )}
-              {section === "sales" && (
-                <SalesPage
-                  colors={c}
-                  darkMode={darkMode}
-                  onSelectChat={setSelectedChat}
-                  selectedChat={selectedChat}
-                />
-              )}
-              {section === "leads" && (
-                <LeadsPage
-                  colors={c}
-                  darkMode={darkMode}
-                  onSelectChat={setSelectedChat}
-                  selectedChat={selectedChat}
-                />
-              )}
-              {/* Add other pages as needed */}
-            </>
+            content
           )}
         </div>
       </div>
