@@ -1,27 +1,25 @@
-// src/AllChatsPage.tsx
-
 import { API_BASE } from "./config";
 import { useEffect, useState } from "react";
 
 type Props = {
   colors: any;
+  onSelectChat: (chat: any) => void;
+  selectedChat?: any;
 };
 
-export default function AllChatsPage({ colors }: Props) {
+export default function AllChatsPage({ colors, onSelectChat, selectedChat }: Props) {
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     fetch(`${API_BASE}/api/chats`)
       .then(res => res.json())
       .then(data => { setChats(data); setLoading(false); })
-      .catch(() => { setError("Could not load chats"); setLoading(false); });
+      .catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
-  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
   if (!chats.length) return <div style={{ padding: 48, color: colors.sub }}>No chats found.</div>;
 
   return (
@@ -39,7 +37,21 @@ export default function AllChatsPage({ colors }: Props) {
         </thead>
         <tbody>
           {chats.map((c, i) => (
-            <tr key={c.from_number || i}>
+            <tr
+              key={c.from_number || i}
+              onClick={() => onSelectChat(c)}
+              style={{
+                cursor: "pointer",
+                background:
+                  selectedChat?.from_number === c.from_number
+                    ? "#fff4f6"
+                    : undefined,
+                borderLeft:
+                  selectedChat?.from_number === c.from_number
+                    ? `5px solid ${colors.red}`
+                    : undefined,
+              }}
+            >
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
               <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
