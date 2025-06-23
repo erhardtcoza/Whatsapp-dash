@@ -1,14 +1,22 @@
 import vinetLogo from "./assets/logo.jpeg";
 
+type Props = {
+  selected: string;
+  onSelect: (section: string) => void;
+  colors: any;
+  user: any;
+  search: string;
+  setSearch: (v: string) => void;
+};
+
 export default function Sidebar({
   selected,
   onSelect,
-  darkMode,
   colors,
+  user,
   search,
   setSearch,
-  onDarkMode,
-}: any) {
+}: Props) {
   return (
     <div
       style={{
@@ -33,7 +41,7 @@ export default function Sidebar({
           style={{
             width: 80,
             marginBottom: 6,
-            filter: darkMode ? "brightness(0.86)" : "none",
+            filter: "none",
           }}
         />
       </div>
@@ -68,45 +76,10 @@ export default function Sidebar({
         selected={selected === "sales"}
         onClick={() => onSelect("sales")}
       />
-      <SidebarItem
-        label="Leads"
-        icon="📈"
-        selected={selected === "leads"}
-        onClick={() => onSelect("leads")}
-      />
-      <SidebarItem
-        label="Broadcast"
-        icon="📢"
-        selected={selected === "broadcast"}
-        onClick={() => onSelect("broadcast")}
-      />
-      <SidebarItem
-        label="Auto Response"
-        icon="⚡️"
-        selected={selected === "autoresp"}
-        onClick={() => onSelect("autoresp")}
-      />
-      <SidebarItem
-        label="Office Hours"
-        icon="⏰"
-        selected={selected === "office"}
-        onClick={() => onSelect("office")}
-      />
-      <SidebarItem
-        label="System"
-        icon="🛠️"
-        selected={selected === "system"}
-        onClick={() => onSelect("system")}
-      />
-      <SidebarItem
-        label="Add User"
-        icon="➕"
-        selected={selected === "adduser"}
-        onClick={() => onSelect("adduser")}
-      />
+      {/* You can add more menu items as needed */}
       {/* Spacer */}
       <div style={{ flex: 1 }} />
-      {/* Search and dark mode */}
+      {/* Search */}
       <div style={{ padding: 12 }}>
         <input
           type="search"
@@ -124,24 +97,6 @@ export default function Sidebar({
             marginBottom: 9,
           }}
         />
-        <button
-          onClick={onDarkMode}
-          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          style={{
-            width: "100%",
-            background: colors.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 7,
-            padding: "7px 0",
-            fontWeight: 700,
-            fontSize: 14,
-            marginTop: 2,
-            cursor: "pointer",
-          }}
-        >
-          {darkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
-        </button>
       </div>
     </div>
   );
