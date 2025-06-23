@@ -1,4 +1,3 @@
-// src/ChatPanel.tsx
 type Props = {
   chat: any;
   colors: any;
@@ -28,7 +27,6 @@ export default function ChatPanel({ chat, colors, onClose }: Props) {
         Close
       </button>
       <div>
-        {/* Add your message list, input, send button etc. here */}
         <div style={{ color: colors.text }}>Chat coming soon…</div>
       </div>
     </div>
