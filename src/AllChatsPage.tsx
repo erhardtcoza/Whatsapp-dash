@@ -1,68 +1,107 @@
-import { API_BASE } from "./config";
-import { useEffect, useState } from "react";
+import vinetLogo from "./assets/logo.jpeg";
 
 type Props = {
+  selected: string;
+  onSelect: (section: string) => void;
   colors: any;
-  onSelectChat: (chat: any) => void;
-  selectedChat?: any;
+  user: any;
+  search: string;
+  setSearch: (v: string) => void;
 };
 
-export default function AllChatsPage({ colors, onSelectChat, selectedChat }: Props) {
-  const [chats, setChats] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`${API_BASE}/api/chats`)
-      .then(res => res.json())
-      .then(data => { setChats(data); setLoading(false); })
-      .catch(() => { setError("Could not load chats"); setLoading(false); });
-  }, []);
-
-  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
-  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
-  if (!chats.length) return <div style={{ padding: 48, color: colors.sub }}>No chats found.</div>;
-
+export default function Sidebar({
+  selected,
+  onSelect,
+  colors,
+  user,
+  search,
+  setSearch,
+}: Props) {
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>All Chats</h2>
-      <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
-        <thead>
-          <tr style={{ background: colors.bg, color: colors.sub }}>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Number</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
-          </tr>
-        </thead>
-        <tbody>
-          {chats.map((c, i) => (
-            <tr
-              key={c.from_number || i}
-              onClick={() => onSelectChat(c)}
-              style={{
-                cursor: "pointer",
-                background:
-                  selectedChat?.from_number === c.from_number
-                    ? "#fff4f6"
-                    : undefined,
-                borderLeft:
-                  selectedChat?.from_number === c.from_number
-                    ? `5px solid ${colors.red}`
-                    : undefined,
-              }}
-            >
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.tag || <span style={{ color: colors.sub }}>—</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div
+      style={{
+        width: 190,
+        height: "100vh",
+        background: colors.sidebar,
+        borderRight: `1.5px solid ${colors.border}`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        position: "fixed",
+        left: 0,
+        top: 0,
+        zIndex: 20,
+      }}
+    >
+      {/* Logo */}
+      <div style={{ padding: "0 12px 18px 22px" }}>
+        <img
+          src={vinetLogo}
+          alt="Vinet"
+          style={{
+            width: 80,
+            marginBottom: 6,
+            filter: "none",
+          }}
+        />
+      </div>
+      {/* Menu */}
+      <SidebarItem
+        label="Unlinked Clients"
+        icon="🔗"
+        selected={selected === "unlinked"}
+        onClick={() => onSelect("unlinked")}
+      />
+      <SidebarItem
+        label="All Chats"
+        icon="💬"
+        selected={selected === "allchats"}
+        onClick={() => onSelect("allchats")}
+      />
+      <div style={{ flex: 1 }} />
+      {/* Search */}
+      <div style={{ padding: 12 }}>
+        <input
+          type="search"
+          placeholder="Search…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            width: "100%",
+            borderRadius: 7,
+            border: `1.3px solid ${colors.border}`,
+            padding: "6px 10px",
+            background: colors.input,
+            color: colors.inputText,
+            fontSize: 14,
+            marginBottom: 9,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SidebarItem({ label, icon, selected, onClick }: any) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: "8px 14px 8px 22px",
+        fontWeight: 500,
+        fontSize: 15,
+        color: selected ? "#fff" : undefined,
+        background: selected ? "#e2001a" : "none",
+        borderRadius: 8,
+        marginBottom: 1,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        position: "relative",
+      }}
+    >
+      <span style={{ marginRight: 10, fontSize: 17 }}>{icon}</span>
+      {label}
     </div>
   );
 }
