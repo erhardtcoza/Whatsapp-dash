@@ -51,54 +51,60 @@ export default function AllChatsPage({ colors }: any) {
   if (error)   return <div style={{ padding: 32, color: colors.red }}>{error}</div>;
 
   return (
-    <div style={{ display: "flex", gap: 40, padding: "0 40px 20px 40px" }}>
-      {/* Left: chats table + toggle */}
-      <div style={{ minWidth: 330 }}>
-        <div style={{ marginBottom: 18, display: "flex", alignItems: "center", gap: 18 }}>
-          <button
-            onClick={() => setShowClosed(s => !s)}
-            style={{
-              background: showClosed ? colors.red : colors.card,
-              color: showClosed ? "#fff" : colors.red,
-              border: `1.5px solid ${colors.red}`,
-              borderRadius: 8,
-              fontWeight: 700,
-              fontSize: 15,
-              padding: "6px 22px",
-              cursor: "pointer",
-            }}
-          >
-            {showClosed ? "Show Open Chats" : "Show Closed Chats"}
-          </button>
-          {toast && (
-            <div style={{
-              background: colors.red,
-              color: "#fff",
-              borderRadius: 8,
-              padding: "7px 20px",
-              fontWeight: 700,
-              fontSize: 16,
-              boxShadow: "0 2px 8px #0002",
-            }}>
-              {toast}
-            </div>
-          )}
-        </div>
+    <div style={{ 
+      display: "flex", 
+      height: "100vh",
+      overflow: "hidden" 
+    }}>
+      {/* Left side */}
+      <div style={{ 
+        width: 400,
+        minWidth: 400,
+        borderRight: `1px solid ${colors.border}`,
+        padding: "20px",
+        boxSizing: "border-box",
+        overflowY: "auto"
+      }}>
+        <button
+          onClick={() => setShowClosed(s => !s)}
+          style={{
+            width: "100%",
+            padding: "8px",
+            marginBottom: "16px",
+            background: showClosed ? colors.red : colors.card,
+            color: showClosed ? "#fff" : colors.red,
+            border: `1px solid ${colors.red}`,
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: "bold"
+          }}
+        >
+          {showClosed ? "Show Open Chats" : "Show Closed Chats"}
+        </button>
 
-        <table style={{
-          width: "100%",
-          background: colors.card,
-          borderRadius: 10,
-          boxShadow: "0 2px 10px #0001",
-        }}>
+        {toast && (
+          <div style={{
+            background: colors.red,
+            color: "#fff",
+            borderRadius: 6,
+            padding: "8px",
+            marginBottom: "16px",
+            textAlign: "center",
+            fontWeight: "bold"
+          }}>
+            {toast}
+          </div>
+        )}
+
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: colors.bg, color: colors.sub }}>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Phone</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Unread</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Phone</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Name</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Email</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Last Message</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Tag</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Unread</th>
             </tr>
           </thead>
           <tbody>
@@ -107,28 +113,26 @@ export default function AllChatsPage({ colors }: any) {
                 key={c.from_number || i}
                 onClick={() => setSelected(c)}
                 style={{
-                  background: selected?.from_number === c.from_number ? "#ffe6ea" : undefined,
                   cursor: "pointer",
+                  background: selected?.from_number === c.from_number ? "#ffe6ea" : undefined,
                 }}
               >
-                <td style={{ padding: "10px 18px", color: colors.text }}>
-                  {c.from_number}
-                </td>
-                <td style={{ padding: "10px 18px", color: colors.text }}>
+                <td style={{ padding: "8px" }}>{c.from_number}</td>
+                <td style={{ padding: "8px" }}>
                   {c.customer_id && c.name
                     ? `[${c.customer_id}] ${c.name}`
                     : c.name || <span style={{ color: colors.sub }}>—</span>}
                 </td>
-                <td style={{ padding: "10px 18px", color: colors.text }}>
+                <td style={{ padding: "8px" }}>
                   {c.email || <span style={{ color: colors.sub }}>—</span>}
                 </td>
-                <td style={{ padding: "10px 18px", color: colors.text }}>
+                <td style={{ padding: "8px" }}>
                   {c.last_message || <span style={{ color: colors.sub }}>—</span>}
                 </td>
-                <td style={{ padding: "10px 18px", color: colors.text }}>
+                <td style={{ padding: "8px" }}>
                   {c.tag || <span style={{ color: colors.sub }}>—</span>}
                 </td>
-                <td style={{ padding: "10px 18px", color: colors.red }}>
+                <td style={{ padding: "8px", color: colors.red, fontWeight: "bold" }}>
                   {c.unread_count || 0}
                 </td>
               </tr>
@@ -137,8 +141,13 @@ export default function AllChatsPage({ colors }: any) {
         </table>
       </div>
 
-      {/* Right: chat panel */}
-      <div style={{ flex: 1 }}>
+      {/* Right side (ChatPanel) */}
+      <div style={{ 
+        flex: 1, 
+        display: "flex", 
+        flexDirection: "column", 
+        overflow: "hidden" 
+      }}>
         <ChatPanel
           phone={selected?.from_number}
           contact={selected}
