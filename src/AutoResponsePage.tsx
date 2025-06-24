@@ -1,90 +1,190 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-const TAGS = [
-  { key: "support", label: "Support" },
-  { key: "accounts", label: "Accounts" },
-  { key: "sales", label: "Sales" },
-  { key: "leads", label: "Leads" },
-];
-
 export default function AutoResponsePage({ colors }: any) {
   const [data, setData] = useState<any[]>([]);
-  const [form, setForm] = useState({ id: 0, tag: "support", hours: "", reply: "" });
-  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ tag: "", hours: "", reply: "" });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const TAGS = ["support", "sales", "accounts", "leads"];
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auto-replies`).then(r => r.json()).then(setData);
+    fetch(`${API_BASE}/api/auto-replies`)
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      });
   }, []);
 
-  function groupByTag(data: any[]) {
-    return data.reduce((acc: any, item: any) => {
-      if (!acc[item.tag]) acc[item.tag] = [];
-      acc[item.tag].push(item);
-      return acc;
-    }, {});
+  function handleChange(field: string, value: string) {
+    setForm({ ...form, [field]: value });
   }
 
-  async function handleSave() {
-    setSaving(true);
+  async function save() {
+    const payload = { ...form, id: editingId };
     await fetch(`${API_BASE}/api/auto-reply`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
-    setForm({ id: 0, tag: "support", hours: "", reply: "" });
-    setSaving(false);
-    const updated = await fetch(`${API_BASE}/api/auto-replies`).then(r => r.json());
+    const res = await fetch(`${API_BASE}/api/auto-replies`);
+    const updated = await res.json();
     setData(updated);
+    setForm({ tag: "", hours: "", reply: "" });
+    setEditingId(null);
   }
 
-  async function handleDelete(id: number) {
-    await fetch(`${API_BASE}/api/auto-reply-delete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    const updated = await fetch(`${API_BASE}/api/auto-replies`).then(r => r.json());
-    setData(updated);
+  function edit(row: any) {
+    setForm({ tag: row.tag, hours: row.hours, reply: row.reply });
+    setEditingId(row.id);
   }
 
-  const grouped = groupByTag(data);
+  function cancelEdit() {
+    setForm({ tag: "", hours: "", reply: "" });
+    setEditingId(null);
+  }
+
+  function groupedByTag() {
+    const grouped: Record<string, any[]> = {};
+    for (let row of data) {
+      if (!grouped[row.tag]) grouped[row.tag] = [];
+      grouped[row.tag].push(row);
+    }
+    return grouped;
+  }
 
   return (
     <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontSize: 22, marginBottom: 20 }}>Auto Responses</h2>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
+        Auto Responses
+      </h2>
 
-      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 30 }}>
-        <select value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value })}>
-          {TAGS.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <select
+          value={form.tag}
+          onChange={(e) => handleChange("tag", e.target.value)}
+          style={{
+            padding: "7px 12px",
+            borderRadius: 6,
+            border: `1.3px solid ${colors.border}`,
+            fontSize: 15,
+            width: 120,
+          }}
+        >
+          <option value="">Select tag</option>
+          {TAGS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
-        <input type="text" placeholder="Hours" value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })} />
-        <input type="text" placeholder="Reply" value={form.reply} onChange={e => setForm({ ...form, reply: e.target.value })} />
-        <button type="submit" disabled={saving}>Save</button>
-      </form>
+        <input
+          type="text"
+          placeholder="Hours (e.g., 08:00-17:00)"
+          value={form.hours}
+          onChange={(e) => handleChange("hours", e.target.value)}
+          style={{
+            padding: "7px 12px",
+            borderRadius: 6,
+            border: `1.3px solid ${colors.border}`,
+            fontSize: 15,
+            width: 160,
+          }}
+        />
+        <input
+          type="text"
+          placeholder="Auto-reply message"
+          value={form.reply}
+          onChange={(e) => handleChange("reply", e.target.value)}
+          style={{
+            padding: "7px 12px",
+            borderRadius: 6,
+            border: `1.3px solid ${colors.border}`,
+            fontSize: 15,
+            flex: 1,
+          }}
+        />
+        <button
+          onClick={save}
+          style={{
+            background: colors.red,
+            color: "#fff",
+            padding: "8px 18px",
+            borderRadius: 7,
+            border: "none",
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+        >
+          {editingId ? "Update" : "Add"}
+        </button>
+        {editingId && (
+          <button
+            onClick={cancelEdit}
+            style={{
+              background: "#aaa",
+              color: "#fff",
+              padding: "8px 12px",
+              borderRadius: 7,
+              border: "none",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        )}
+      </div>
 
-      {Object.entries(grouped).map(([tag, replies]: any) => (
-        <div key={tag} style={{ marginBottom: 30 }}>
-          <h3 style={{ color: colors.red }}>{TAGS.find(t => t.key === tag)?.label}</h3>
-          <table>
-            <thead>
-              <tr><th>Hours</th><th>Reply</th><th></th></tr>
-            </thead>
-            <tbody>
-              {replies.map((r: any) => (
-                <tr key={r.id}>
-                  <td>{r.hours}</td>
-                  <td>{r.reply}</td>
-                  <td>
-                    <button onClick={() => setForm(r)}>Edit</button>
-                    <button onClick={() => handleDelete(r.id)}>Delete</button>
-                  </td>
+      {loading ? (
+        <div style={{ color: colors.sub }}>Loading…</div>
+      ) : (
+        Object.entries(groupedByTag()).map(([tag, rows]) => (
+          <div key={tag} style={{ marginBottom: 32 }}>
+            <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 10 }}>
+              {tag.toUpperCase()}
+            </h3>
+            <table style={{ width: "100%", background: colors.card, borderRadius: 8 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: 8 }}>Hours</th>
+                  <th style={{ textAlign: "left", padding: 8 }}>Reply</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td style={{ padding: 8 }}>{row.hours}</td>
+                    <td style={{ padding: 8 }}>{row.reply}</td>
+                    <td style={{ padding: 8 }}>
+                      <button
+                        onClick={() => edit(row)}
+                        style={{
+                          background: colors.red,
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "4px 10px",
+                          fontWeight: 600,
+                          fontSize: 14,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
     </div>
   );
 }
