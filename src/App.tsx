@@ -7,7 +7,11 @@ import SupportPage from "./SupportPage";
 import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
 import LeadsPage from "./LeadsPage";
-// ...other imports as needed
+import BroadcastPage from "./BroadcastPage";
+import AutoResponsePage from "./AutoResponsePage";
+import OfficeHoursPage from "./OfficeHoursPage";
+import SystemPage from "./SystemPage";
+import AddUserPage from "./AddUserPage";
 import "./App.css";
 
 export default function App() {
@@ -135,7 +139,11 @@ export default function App() {
           {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} />}
           {section === "sales" && <SalesPage colors={c} darkMode={darkMode} />}
           {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} />}
-          {/* Add other pages as needed */}
+          {section === "broadcast" && <BroadcastPage colors={c} darkMode={darkMode} />}
+          {section === "autoresp" && <AutoResponsePage colors={c} darkMode={darkMode} />}
+          {section === "office" && <OfficeHoursPage colors={c} darkMode={darkMode} />}
+          {section === "system" && <SystemPage colors={c} darkMode={darkMode} />}
+          {section === "adduser" && <AddUserPage colors={c} />}
         </div>
       </div>
     </div>
