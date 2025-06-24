@@ -38,28 +38,22 @@ export default function ChatPanel({ phone, contact, colors }: any) {
       .finally(() => setSending(false));
   }
 
-  if (!phone) return (
-    <div style={{ color: colors.sub, padding: 40, textAlign: "center" }}>
-      Select a chat to view conversation.
-    </div>
-  );
-
   function renderMessageBody(msg: any) {
-    // Text only (default)
-    if (msg.media_url && msg.media_url.endsWith(".jpg")) {
-      // Image message
+    // Render any image with media_url
+    if (msg.media_url) {
       return (
         <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
           <img
             src={msg.media_url}
             alt="WhatsApp Media"
             style={{ maxWidth: 180, maxHeight: 180, borderRadius: 12, margin: "4px 0" }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         </a>
       );
     }
+    // Location support
     if (msg.location_json) {
-      // Location message
       try {
         const loc = JSON.parse(msg.location_json);
         const mapsUrl = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
@@ -80,9 +74,15 @@ export default function ChatPanel({ phone, contact, colors }: any) {
         return "[Invalid location data]";
       }
     }
-    // Fallback: show body text
+    // Default: show body text
     return msg.body;
   }
+
+  if (!phone) return (
+    <div style={{ color: colors.sub, padding: 40, textAlign: "center" }}>
+      Select a chat to view conversation.
+    </div>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: 380, background: colors.bg, borderRadius: 12, marginTop: 28 }}>
