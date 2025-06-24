@@ -14,7 +14,7 @@ import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import "./App.css";
 
-// Section display names for possible future use
+// Human-friendly titles for sidebar sections
 const SECTION_TITLES: Record<string, string> = {
   unlinked: "Unlinked Clients",
   allchats: "All Chats",
@@ -24,7 +24,7 @@ const SECTION_TITLES: Record<string, string> = {
   leads: "Leads",
   broadcast: "Broadcast",
   autoresp: "Auto Response",
-  office: "Office Hours",
+  office: "Office Hours Management",
   system: "System",
   adduser: "Add User"
 };
@@ -113,22 +113,37 @@ export default function App() {
             margin: "24px auto 40px auto",
           }}
         >
-          {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
-          {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
-          {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
-          {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} />}
-          {section === "sales" && <SalesPage colors={c} darkMode={darkMode} />}
-          {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} />}
-          {section === "broadcast" && <BroadcastPage colors={c} darkMode={darkMode} />}
-          {section === "autoresp" && <AutoResponsePage colors={c} darkMode={darkMode} />}
-          {section === "office" && <OfficeHoursPage colors={c} darkMode={darkMode} />}
-          {section === "system" && <SystemPage colors={c} darkMode={darkMode} />}
-          {section === "adduser" && user.role === "admin" && <AddUserPage colors={c} />}
-          {section === "adduser" && user.role !== "admin" && (
-            <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
-              You do not have access to this section.
-            </div>
-          )}
+          {/* Section Title Headline */}
+          <div style={{
+            fontWeight: 700,
+            fontSize: 26,
+            color: c.text,
+            padding: "28px 40px 14px 40px",
+            borderBottom: `1.5px solid ${c.border}`,
+            marginBottom: 6,
+            letterSpacing: 0.1,
+            textAlign: "left"
+          }}>
+            {SECTION_TITLES[section] || ""}
+          </div>
+          <div style={{ padding: "0 40px" }}>
+            {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
+            {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
+            {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
+            {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} />}
+            {section === "sales" && <SalesPage colors={c} darkMode={darkMode} />}
+            {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} />}
+            {section === "broadcast" && <BroadcastPage colors={c} darkMode={darkMode} />}
+            {section === "autoresp" && <AutoResponsePage colors={c} darkMode={darkMode} />}
+            {section === "office" && <OfficeHoursPage colors={c} darkMode={darkMode} />}
+            {section === "system" && <SystemPage colors={c} darkMode={darkMode} />}
+            {section === "adduser" && user.role === "admin" && <AddUserPage colors={c} />}
+            {section === "adduser" && user.role !== "admin" && (
+              <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
+                You do not have access to this section.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
