@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE }           from './config';
 
 export default function SupportPage({ colors }: any) {
   const [chats, setChats] = useState<any[]>([]);
