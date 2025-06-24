@@ -1,12 +1,31 @@
 import vinetLogo from "./assets/logo.jpeg";
 
+interface SidebarProps {
+  selected: string;
+  onSelect: (val: string) => void;
+  colors: any;
+  search: string;
+  setSearch: (val: string) => void;
+}
+
 export default function Sidebar({
   selected,
   onSelect,
   colors,
   search,
   setSearch,
-}: any) {
+}: SidebarProps) {
+  const menuItems = [
+    { label: "All Chats", icon: "💬", key: "allchats" },
+    { label: "Unverified", icon: "🔗", key: "unverified" },
+    { label: "Support", icon: "🛠️", key: "support" },
+    { label: "Accounts", icon: "💳", key: "accounts" },
+    { label: "Sales", icon: "💼", key: "sales" },
+    { label: "Leads", icon: "📈", key: "leads" },
+    { label: "Add User", icon: "➕", key: "adduser" },
+    { label: "Office Hours", icon: "⏰", key: "office" },
+  ];
+
   return (
     <div
       style={{
@@ -16,7 +35,6 @@ export default function Sidebar({
         borderRight: `1.5px solid ${colors.border}`,
         display: "flex",
         flexDirection: "column",
-        alignItems: "stretch",
         position: "fixed",
         left: 0,
         top: 0,
@@ -31,54 +49,15 @@ export default function Sidebar({
         />
       </div>
 
-      <SidebarItem
-        label="All Chats"
-        icon="💬"
-        selected={selected === "allchats"}
-        onClick={() => onSelect("allchats")}
-      />
-      <SidebarItem
-        label="Unverified"
-        icon="🔗"
-        selected={selected === "unverified"}
-        onClick={() => onSelect("unverified")}
-      />
-      <SidebarItem
-        label="Support"
-        icon="🛠️"
-        selected={selected === "support"}
-        onClick={() => onSelect("support")}
-      />
-      <SidebarItem
-        label="Accounts"
-        icon="💳"
-        selected={selected === "accounts"}
-        onClick={() => onSelect("accounts")}
-      />
-      <SidebarItem
-        label="Sales"
-        icon="💼"
-        selected={selected === "sales"}
-        onClick={() => onSelect("sales")}
-      />
-      <SidebarItem
-        label="Leads"
-        icon="📈"
-        selected={selected === "leads"}
-        onClick={() => onSelect("leads")}
-      />
-      <SidebarItem
-        label="Add User"
-        icon="➕"
-        selected={selected === "adduser"}
-        onClick={() => onSelect("adduser")}
-      />
-      <SidebarItem
-        label="Office Hours"
-        icon="⏰"
-        selected={selected === "office"}
-        onClick={() => onSelect("office")}
-      />
+      {menuItems.map(item => (
+        <SidebarItem
+          key={item.key}
+          label={item.label}
+          icon={item.icon}
+          selected={selected === item.key}
+          onClick={() => onSelect(item.key)}
+        />
+      ))}
 
       <div style={{ flex: 1 }} />
 
@@ -103,7 +82,17 @@ export default function Sidebar({
   );
 }
 
-function SidebarItem({ label, icon, selected, onClick }: any) {
+function SidebarItem({
+  label,
+  icon,
+  selected,
+  onClick,
+}: {
+  label: string;
+  icon: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
   return (
     <div
       onClick={onClick}
