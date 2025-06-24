@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_BASE }           from "./config";
+import { API_BASE } from "./config";
 
 export default function ChatPanel({
   phone,
@@ -15,24 +15,22 @@ export default function ChatPanel({
     last_name: ""
   });
 
-  // Reload messages when phone changes
+  // load messages
   useEffect(() => {
-    if (phone) {
-      fetch(`${API_BASE}/api/messages?phone=${phone}`)
-        .then(r => r.json())
-        .then(setMsgs);
-      // seed form
-      setForm({
-        customer_id: contact?.customer_id || "",
-        first_name: contact?.name?.split(" ")[0] || "",
-        last_name: contact?.name?.split(" ").slice(1).join(" ") || ""
-      });
-    } else {
-      setMsgs([]);
-    }
+    if (!phone) return;
+    fetch(`${API_BASE}/api/messages?phone=${phone}`)
+      .then(r => r.json())
+      .then(setMsgs);
+
+    // seed form
+    setForm({
+      customer_id: contact?.customer_id || "",
+      first_name: contact?.name?.split(" ")[0] || "",
+      last_name: contact?.name?.split(" ").slice(1).join(" ") || ""
+    });
   }, [phone, contact]);
 
-  // Send a message
+  // send message
   async function send() {
     if (!input) return;
     await fetch(`${API_BASE}/api/send-message`, {
@@ -41,14 +39,13 @@ export default function ChatPanel({
       body: JSON.stringify({ phone, body: input })
     });
     setInput("");
-    // reload
-    const d = await fetch(`${API_BASE}/api/messages?phone=${phone}`).then(r=>r.json());
-    setMsgs(d);
+    const updated = await fetch(`${API_BASE}/api/messages?phone=${phone}`).then(r=>r.json());
+    setMsgs(updated);
   }
 
-  // Save manual customer info
-  async function saveClient() {
-    await fetch(`${API_BASE}/api/update-customer`, {
+  // save manual customer info
+  function saveClient() {
+    fetch(`${API_BASE}/api/update-customer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -58,16 +55,15 @@ export default function ChatPanel({
         email: contact?.email || ""
       })
     });
-    // no live update of header needed; reload happens on chat change
   }
 
   if (!phone) {
     return (
       <div style={{
-        flex:1,
-        display:"flex",
-        alignItems:"center",
-        justifyContent:"center",
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         color: colors.sub
       }}>
         Select a chat to begin
@@ -76,21 +72,29 @@ export default function ChatPanel({
   }
 
   return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
-      {/* Header form */}
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      width: "100%",
+      height: "100%"
+    }}>
+      {/* header (fixed height) */}
       <div style={{
-        padding: 16,
-        borderBottom: `1px solid ${colors.border}`,
+        flexShrink: 0,
         display: "flex",
         alignItems: "center",
-        gap: 12
+        gap: 8,
+        padding: 16,
+        borderBottom: `1px solid ${colors.border}`,
+        height: 60,
+        boxSizing: "border-box"
       }}>
         <input
           placeholder="Customer ID"
           value={form.customer_id}
-          onChange={e => setForm({...form, customer_id: e.target.value})}
+          onChange={e => setForm({...form,customer_id:e.target.value})}
           style={{
-            flex: 1,
+            width: 120,
             padding: 8,
             borderRadius: 6,
             border: `1px solid ${colors.border}`
@@ -99,9 +103,9 @@ export default function ChatPanel({
         <input
           placeholder="First name"
           value={form.first_name}
-          onChange={e => setForm({...form, first_name: e.target.value})}
+          onChange={e => setForm({...form,first_name:e.target.value})}
           style={{
-            flex: 1,
+            width: 120,
             padding: 8,
             borderRadius: 6,
             border: `1px solid ${colors.border}`
@@ -110,9 +114,9 @@ export default function ChatPanel({
         <input
           placeholder="Last name"
           value={form.last_name}
-          onChange={e => setForm({...form, last_name: e.target.value})}
+          onChange={e => setForm({...form,last_name:e.target.value})}
           style={{
-            flex: 1,
+            width: 120,
             padding: 8,
             borderRadius: 6,
             border: `1px solid ${colors.border}`
@@ -145,12 +149,13 @@ export default function ChatPanel({
         </button>
       </div>
 
-      {/* Messages */}
+      {/* message list (flex:1, scrollable) */}
       <div style={{
-        flex:1,
-        padding: 16,
+        flex: 1,
         overflowY: "auto",
-        background: colors.bg
+        padding: 16,
+        background: colors.bg,
+        boxSizing: "border-box"
       }}>
         {msgs.map(m => (
           <div
@@ -164,9 +169,7 @@ export default function ChatPanel({
               display: "inline-block",
               padding: "8px 12px",
               borderRadius: 12,
-              background: m.direction === "outgoing"
-                ? colors.msgOut
-                : colors.msgIn,
+              background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
               color: m.direction === "outgoing" ? "#fff" : colors.text
             }}>
               {m.body}
@@ -175,21 +178,24 @@ export default function ChatPanel({
         ))}
       </div>
 
-      {/* Input */}
+      {/* input bar (fixed height) */}
       <div style={{
+        flexShrink: 0,
+        display: "flex",
+        gap: 8,
         padding: 16,
         borderTop: `1px solid ${colors.border}`,
-        display: "flex",
-        gap: 8
+        height: 60,
+        boxSizing: "border-box"
       }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Type a message..."
           style={{
-            flex:1,
-            padding:10,
-            borderRadius:8,
+            flex: 1,
+            padding: 10,
+            borderRadius: 8,
             border: `1px solid ${colors.border}`
           }}
         />
@@ -199,7 +205,7 @@ export default function ChatPanel({
             background: colors.red,
             color: "#fff",
             border: "none",
-            borderRadius:8,
+            borderRadius: 8,
             padding: "0 16px",
             cursor: "pointer"
           }}
