@@ -14,7 +14,7 @@ import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import "./App.css";
 
-// Human-friendly titles for sidebar sections
+// Section titles mapping
 const SECTION_TITLES: Record<string, string> = {
   unlinked: "Unlinked Clients",
   allchats: "All Chats",
@@ -88,32 +88,21 @@ export default function App() {
         user={user}
         onLogout={handleLogout}
       />
-      <div
-        style={{
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", background: c.bg }}>
+        <div style={{
           flex: 1,
+          width: "100%",
+          maxWidth: 1100,
+          minHeight: 420,
+          background: c.card,
+          borderRadius: 16,
+          boxShadow: "0 2px 14px #0001",
+          padding: "0 0 26px 0",
+          color: c.text,
           display: "flex",
           flexDirection: "column",
-          minHeight: "100vh",
-          background: c.bg,
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            width: "100%",
-            maxWidth: 1100,
-            minHeight: 420,
-            background: c.card,
-            borderRadius: 16,
-            boxShadow: "0 2px 14px #0001",
-            padding: "0 0 26px 0",
-            color: c.text,
-            display: "flex",
-            flexDirection: "column",
-            margin: "24px auto 40px auto",
-          }}
-        >
-          {/* Section Title Headline */}
+          margin: "24px auto 40px auto",
+        }}>
           <div style={{
             fontWeight: 700,
             fontSize: 26,
@@ -126,7 +115,7 @@ export default function App() {
           }}>
             {SECTION_TITLES[section] || ""}
           </div>
-          <div style={{ padding: "0 40px" }}>
+          <div style={{ padding: "0 40px", flex: 1 }}>
             {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
             {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
             {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
