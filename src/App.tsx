@@ -14,7 +14,6 @@ import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import "./App.css";
 
-// Section titles mapping
 const SECTION_TITLES: Record<string, string> = {
   unlinked: "Unlinked Clients",
   allchats: "All Chats",
@@ -31,7 +30,9 @@ const SECTION_TITLES: Record<string, string> = {
 
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
+
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
+
   useEffect(() => {
     document.body.style.background = darkMode ? "#1a1d22" : "#f7f7fa";
     localStorage.setItem("wa-dark", darkMode ? "1" : "0");
@@ -41,14 +42,6 @@ export default function App() {
     const u = localStorage.getItem("wa-user");
     return u ? JSON.parse(u) : null;
   });
-  function handleLoginSuccess(userObj: any) {
-    setUser(userObj);
-    localStorage.setItem("wa-user", JSON.stringify(userObj));
-  }
-  function handleLogout() {
-    setUser(null);
-    localStorage.removeItem("wa-user");
-  }
 
   const [section, setSection] = useState("unlinked");
   const [search, setSearch] = useState("");
@@ -71,9 +64,17 @@ export default function App() {
         msgIn: "#fff", msgOut: "#e2001a",
       };
 
-  if (!user) {
-    return <Login onLogin={handleLoginSuccess} colors={c} />;
+  function handleLoginSuccess(userObj: any) {
+    setUser(userObj);
+    localStorage.setItem("wa-user", JSON.stringify(userObj));
   }
+
+  function handleLogout() {
+    setUser(null);
+    localStorage.removeItem("wa-user");
+  }
+
+  if (!user) return <Login onLogin={handleLoginSuccess} colors={c} />;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
@@ -113,23 +114,28 @@ export default function App() {
             letterSpacing: 0.1,
             textAlign: "left"
           }}>
-            {SECTION_TITLES[section] || ""}
+            {SECTION_TITLES[section] || "Dashboard"}
           </div>
           <div style={{ padding: "0 40px", flex: 1 }}>
-            {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
-            {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
-            {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
-            {section === "accounts" && <AccountsPage colors={c} darkMode={darkMode} />}
-            {section === "sales" && <SalesPage colors={c} darkMode={darkMode} />}
-            {section === "leads" && <LeadsPage colors={c} darkMode={darkMode} />}
-            {section === "broadcast" && <BroadcastPage colors={c} darkMode={darkMode} />}
-            {section === "autoresp" && <AutoResponsePage colors={c} darkMode={darkMode} />}
-            {section === "office" && <OfficeHoursPage colors={c} darkMode={darkMode} />}
-            {section === "system" && <SystemPage colors={c} darkMode={darkMode} />}
-            {section === "adduser" && user.role === "admin" && <AddUserPage colors={c} />}
-            {section === "adduser" && user.role !== "admin" && (
+            {{
+              unlinked: <UnlinkedClientsPage colors={c} darkMode={darkMode} />,
+              allchats: <AllChatsPage colors={c} darkMode={darkMode} />,
+              support: <SupportPage colors={c} darkMode={darkMode} />,
+              accounts: <AccountsPage colors={c} darkMode={darkMode} />,
+              sales: <SalesPage colors={c} darkMode={darkMode} />,
+              leads: <LeadsPage colors={c} darkMode={darkMode} />,
+              broadcast: <BroadcastPage colors={c} darkMode={darkMode} />,
+              autoresp: <AutoResponsePage colors={c} />,
+              office: <OfficeHoursPage colors={c} />,
+              system: <SystemPage colors={c} darkMode={darkMode} />,
+              adduser: user.role === "admin"
+                ? <AddUserPage colors={c} />
+                : <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
+                    You do not have access to this section.
+                  </div>,
+            }[section] || (
               <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
-                You do not have access to this section.
+                Invalid section
               </div>
             )}
           </div>
