@@ -7,184 +7,151 @@ interface User {
   role: string;
 }
 
-export default function AddUserPage({ colors }: { colors: any }) {
+export default function AddUserPage({ colors }: any) {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [form, setForm] = useState({ username: "", password: "", role: "user" });
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
   async function fetchUsers() {
     setLoading(true);
-    setError("");
     try {
       const res = await fetch(`${API_BASE}/api/users`);
-      if (!res.ok) throw new Error("Failed to fetch users.");
-      const data = await res.json();
-      setUsers(data);
-    } catch (e: any) {
-      setError(e.message);
+      setUsers(await res.json());
+    } catch {
+      setMessage("Error fetching users.");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleAdd(e: React.FormEvent) {
+  async function handleAdd(e: any) {
     e.preventDefault();
-    setMessage("");
-    if (!form.username.trim() || !form.password.trim()) {
-      setMessage("Username and password are required.");
-      return;
-    }
+    setSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/add-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error("Failed to add user.");
+      if (!res.ok) throw new Error();
       setForm({ username: "", password: "", role: "user" });
-      setMessage("User added.");
+      setMessage("User added successfully.");
       fetchUsers();
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch {
+      setMessage("Error adding user.");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function handleDelete(id: number) {
     if (!window.confirm("Delete this user?")) return;
+    setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/delete-user`, {
+      await fetch(`${API_BASE}/api/delete-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      if (!res.ok) throw new Error("Failed to delete user.");
       setMessage("User deleted.");
       fetchUsers();
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch {
+      setMessage("Error deleting user.");
+    } finally {
+      setSaving(false);
     }
   }
 
-  if (loading) return <div style={{ padding: 32, color: colors.sub }}>Loading users…</div>;
-  if (error) return <div style={{ padding: 32, color: colors.red }}>{error}</div>;
-
   return (
-    <div style={{ padding: "20px", boxSizing: "border-box", width: "100%", height: "100vh", overflowY: "auto" }}>
-      <div style={{ maxWidth: 600 }}>
-        <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
-          Add User
-        </h2>
+    <div style={{ padding: 32 }}>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
+        User Management
+      </h2>
 
-        <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 26 }}>
+      {/* Add user form */}
+      <div style={{ marginBottom: 30 }}>
+        <form onSubmit={handleAdd} style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <input
             type="text"
             placeholder="Username"
             value={form.username}
+            required
+            style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${colors.border}`, fontSize: 15 }}
             onChange={e => setForm({ ...form, username: e.target.value })}
-            style={{
-              borderRadius: 8,
-              border: `1.3px solid ${colors.border}`,
-              padding: "7px 12px",
-              background: colors.input,
-              color: colors.inputText,
-              fontSize: 15,
-            }}
           />
           <input
             type="password"
             placeholder="Password"
             value={form.password}
+            required
+            style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${colors.border}`, fontSize: 15 }}
             onChange={e => setForm({ ...form, password: e.target.value })}
-            style={{
-              borderRadius: 8,
-              border: `1.3px solid ${colors.border}`,
-              padding: "7px 12px",
-              background: colors.input,
-              color: colors.inputText,
-              fontSize: 15,
-            }}
           />
           <select
             value={form.role}
+            style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${colors.border}`, fontSize: 15 }}
             onChange={e => setForm({ ...form, role: e.target.value })}
-            style={{
-              borderRadius: 8,
-              border: `1.3px solid ${colors.border}`,
-              padding: "7px 12px",
-              background: colors.input,
-              color: colors.inputText,
-              fontSize: 15,
-            }}
           >
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
           <button
             type="submit"
+            disabled={saving}
             style={{
-              background: colors.red,
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 0",
-              fontWeight: 700,
-              fontSize: 15,
-              cursor: "pointer",
+              background: colors.red, color: "#fff", borderRadius: 8, padding: "7px 16px",
+              fontWeight: "bold", fontSize: 15, cursor: "pointer", border: "none"
             }}
           >
-            Add User
+            {saving ? "Saving..." : "Add User"}
           </button>
-          {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
         </form>
-
-        <h3 style={{ color: colors.text, fontWeight: 500, fontSize: 18, marginBottom: 12 }}>
-          Current Users
-        </h3>
-        {users.length === 0 ? (
-          <div style={{ color: colors.sub }}>No users found.</div>
-        ) : (
-          <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
-            <thead>
-              <tr style={{ background: colors.bg, color: colors.sub }}>
-                <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
-                <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
-                <th style={{ padding: "8px 10px" }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u.id}>
-                  <td style={{ padding: "8px 10px" }}>{u.username}</td>
-                  <td style={{ padding: "8px 10px" }}>{u.role}</td>
-                  <td style={{ padding: "8px 10px" }}>
-                    <button
-                      onClick={() => handleDelete(u.id)}
-                      style={{
-                        background: colors.red,
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 7,
-                        fontWeight: 700,
-                        fontSize: 14,
-                        padding: "4px 12px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {message && (
+          <div style={{ color: colors.red, fontWeight: 600, marginTop: 12 }}>
+            {message}
+          </div>
         )}
       </div>
+
+      {/* Users Table */}
+      {loading ? (
+        <div style={{ color: colors.sub }}>Loading users…</div>
+      ) : (
+        <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
+          <thead>
+            <tr style={{ background: colors.bg, color: colors.sub }}>
+              <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
+              <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.id}>
+                <td style={{ padding: "8px 10px" }}>{user.username}</td>
+                <td style={{ padding: "8px 10px" }}>{user.role}</td>
+                <td>
+                  <button
+                    onClick={() => handleDelete(user.id)}
+                    disabled={saving}
+                    style={{
+                      background: colors.red, color: "#fff", borderRadius: 7,
+                      fontWeight: 700, fontSize: 14, padding: "4px 12px",
+                      cursor: "pointer", border: "none"
+                    }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
