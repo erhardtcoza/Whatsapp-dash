@@ -1,143 +1,173 @@
-import { useEffect, useState } from 'react';
-import { API_BASE }           from './config';
+import { useEffect, useState } from "react";
+import { API_BASE }           from "./config";
 
 export default function ChatPanel({
   phone,
   contact,
   colors,
-  onCloseChat,
+  onCloseChat
 }: any) {
-  const [msgs, setMsgs]       = useState<any[]>([]);
-  const [input, setInput]     = useState('');
-  const [editing, setEditing] = useState(!contact?.customer_id);
-  const [form, setForm]       = useState({
-    customer_id: contact?.customer_id || '',
-    first_name: '',
-    last_name: '',
+  const [msgs, setMsgs]   = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [form, setForm]   = useState({
+    customer_id: contact?.customer_id || "",
+    first_name: "",
+    last_name: ""
   });
 
+  // Reload messages when phone changes
   useEffect(() => {
-    if (phone) fetchMsgs();
-  }, [phone]);
+    if (phone) {
+      fetch(`${API_BASE}/api/messages?phone=${phone}`)
+        .then(r => r.json())
+        .then(setMsgs);
+      // seed form
+      setForm({
+        customer_id: contact?.customer_id || "",
+        first_name: contact?.name?.split(" ")[0] || "",
+        last_name: contact?.name?.split(" ").slice(1).join(" ") || ""
+      });
+    } else {
+      setMsgs([]);
+    }
+  }, [phone, contact]);
 
-  async function fetchMsgs() {
-    const res = await fetch(`${API_BASE}/api/messages?phone=${phone}`);
-    const data = await res.json();
-    setMsgs(data);
-  }
-
-  async function handleSend(e: any) {
-    e.preventDefault();
+  // Send a message
+  async function send() {
     if (!input) return;
     await fetch(`${API_BASE}/api/send-message`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ phone, body: input }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, body: input })
     });
-    setInput('');
-    fetchMsgs();
+    setInput("");
+    // reload
+    const d = await fetch(`${API_BASE}/api/messages?phone=${phone}`).then(r=>r.json());
+    setMsgs(d);
   }
 
-  async function handleSaveClient() {
+  // Save manual customer info
+  async function saveClient() {
     await fetch(`${API_BASE}/api/update-customer`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ phone, ...form }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone,
+        customer_id: form.customer_id,
+        name: `${form.first_name} ${form.last_name}`.trim(),
+        email: contact?.email || ""
+      })
     });
-    setEditing(false);
-    // trigger sidebar/chatlist refresh if needed
+    // no live update of header needed; reload happens on chat change
+  }
+
+  if (!phone) {
+    return (
+      <div style={{
+        flex:1,
+        display:"flex",
+        alignItems:"center",
+        justifyContent:"center",
+        color: colors.sub
+      }}>
+        Select a chat to begin
+      </div>
+    );
   }
 
   return (
-    <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column',
-      height: '100%', background: colors.card
-    }}>
-      {/* Header: manual client form or display */}
+    <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
+      {/* Header form */}
       <div style={{
-        padding: 16, borderBottom: `1px solid ${colors.border}`
+        padding: 16,
+        borderBottom: `1px solid ${colors.border}`,
+        display: "flex",
+        alignItems: "center",
+        gap: 12
       }}>
-        <strong>Chat: {phone}</strong>
-        {editing ? (
-          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-            <input
-              placeholder="Customer ID"
-              value={form.customer_id}
-              onChange={e => setForm({...form,customer_id:e.target.value})}
-              style={{ flex:1, padding:8, borderRadius:4, border:`1px solid ${colors.border}` }}
-            />
-            <input
-              placeholder="First name"
-              value={form.first_name}
-              onChange={e => setForm({...form,first_name:e.target.value})}
-              style={{ flex:1, padding:8, borderRadius:4, border:`1px solid ${colors.border}` }}
-            />
-            <input
-              placeholder="Last name"
-              value={form.last_name}
-              onChange={e => setForm({...form,last_name:e.target.value})}
-              style={{ flex:1, padding:8, borderRadius:4, border:`1px solid ${colors.border}` }}
-            />
-            <button
-              onClick={handleSaveClient}
-              style={{
-                background: colors.red,
-                color: '#fff',
-                border:'none',
-                borderRadius:4,
-                padding:'8px 12px',
-                cursor:'pointer'
-              }}
-            >
-              Save
-            </button>
-          </div>
-        ) : (
-          <div style={{ marginTop:12 }}>
-            <span style={{ marginRight: 16 }}>
-              ID: {contact.customer_id}
-            </span>
-            <span>
-              Name: {contact.name}
-            </span>
-          </div>
-        )}
-
+        <input
+          placeholder="Customer ID"
+          value={form.customer_id}
+          onChange={e => setForm({...form, customer_id: e.target.value})}
+          style={{
+            flex: 1,
+            padding: 8,
+            borderRadius: 6,
+            border: `1px solid ${colors.border}`
+          }}
+        />
+        <input
+          placeholder="First name"
+          value={form.first_name}
+          onChange={e => setForm({...form, first_name: e.target.value})}
+          style={{
+            flex: 1,
+            padding: 8,
+            borderRadius: 6,
+            border: `1px solid ${colors.border}`
+          }}
+        />
+        <input
+          placeholder="Last name"
+          value={form.last_name}
+          onChange={e => setForm({...form, last_name: e.target.value})}
+          style={{
+            flex: 1,
+            padding: 8,
+            borderRadius: 6,
+            border: `1px solid ${colors.border}`
+          }}
+        />
+        <button
+          onClick={saveClient}
+          style={{
+            background: colors.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "8px 16px",
+            cursor: "pointer"
+          }}
+        >
+          Save
+        </button>
         <button
           onClick={onCloseChat}
           style={{
-            float: 'right',
-            background: 'transparent',
-            border:'none',
+            marginLeft: "auto",
+            background: "transparent",
+            border: "none",
             color: colors.red,
-            cursor: 'pointer'
+            cursor: "pointer"
           }}
         >
           Close Chat
         </button>
       </div>
 
-      {/* Message list */}
+      {/* Messages */}
       <div style={{
         flex:1,
-        overflowY:'auto',
-        padding:16,
+        padding: 16,
+        overflowY: "auto",
         background: colors.bg
       }}>
         {msgs.map(m => (
-          <div key={m.id}
-               style={{
-                 marginBottom:12,
-                 textAlign: m.direction==='outgoing' ? 'right':'left'
-               }}>
+          <div
+            key={m.id}
+            style={{
+              marginBottom: 12,
+              textAlign: m.direction === "outgoing" ? "right" : "left"
+            }}
+          >
             <div style={{
-              display:'inline-block',
-              padding:'8px 12px',
-              borderRadius:12,
-              background: m.direction==='outgoing'
+              display: "inline-block",
+              padding: "8px 12px",
+              borderRadius: 12,
+              background: m.direction === "outgoing"
                 ? colors.msgOut
                 : colors.msgIn,
-              color: m.direction==='outgoing' ? '#fff':colors.text
+              color: m.direction === "outgoing" ? "#fff" : colors.text
             }}>
               {m.body}
             </div>
@@ -145,37 +175,38 @@ export default function ChatPanel({
         ))}
       </div>
 
-      {/* Input form */}
-      <form onSubmit={handleSend} style={{
-        padding:16,
-        borderTop:`1px solid ${colors.border}`,
-        display:'flex', gap:8
+      {/* Input */}
+      <div style={{
+        padding: 16,
+        borderTop: `1px solid ${colors.border}`,
+        display: "flex",
+        gap: 8
       }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Type a message…"
+          placeholder="Type a message..."
           style={{
             flex:1,
             padding:10,
             borderRadius:8,
-            border:`1px solid ${colors.border}`
+            border: `1px solid ${colors.border}`
           }}
         />
         <button
-          type="submit"
+          onClick={send}
           style={{
             background: colors.red,
-            color: '#fff',
-            border:'none',
+            color: "#fff",
+            border: "none",
             borderRadius:8,
-            padding:'0 16px',
-            cursor:'pointer'
+            padding: "0 16px",
+            cursor: "pointer"
           }}
         >
           Send
         </button>
-      </form>
+      </div>
     </div>
   );
 }
