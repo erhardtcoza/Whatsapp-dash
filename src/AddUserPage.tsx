@@ -1,101 +1,94 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
 export default function AddUserPage({ colors }: any) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user");
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const [form, setForm] = useState({ username: "", password: "", role: "user" });
+  const [message, setMessage] = useState("");
 
-  function loadUsers() {
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  function fetchUsers() {
     setLoading(true);
-    fetch(`${API_BASE}/api/admins`)
+    fetch(`${API_BASE}/api/users`)
       .then(res => res.json())
-      .then(data => { setUsers(data); setLoading(false); });
+      .then(setUsers)
+      .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadUsers(); }, []);
-
-  function handleSubmit(e: any) {
+  async function handleAdd(e: any) {
     e.preventDefault();
-    setErr("");
-    fetch(`${API_BASE}/api/add-admin`, {
+    setMessage("");
+    if (!form.username.trim() || !form.password.trim()) {
+      setMessage("Username and password are required.");
+      return;
+    }
+    await fetch(`${API_BASE}/api/add-user`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, role })
-    })
-      .then(res => res.json())
-      .then(r => {
-        if (r.ok) {
-          setUsername(""); setPassword(""); setRole("user");
-          loadUsers();
-        } else setErr(r.error || "Failed to add user.");
-      })
-      .catch(() => setErr("Failed to add user."));
+      body: JSON.stringify(form)
+    });
+    setForm({ username: "", password: "", role: "user" });
+    setMessage("User added.");
+    fetchUsers();
   }
 
-  function handleDelete(username: string) {
-    if (!window.confirm("Delete user?")) return;
-    fetch(`${API_BASE}/api/delete-admin`, {
+  async function handleDelete(id: number) {
+    if (!window.confirm("Delete this user?")) return;
+    await fetch(`${API_BASE}/api/delete-user`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username })
-    })
-      .then(() => loadUsers());
+      body: JSON.stringify({ id })
+    });
+    setMessage("User deleted.");
+    fetchUsers();
   }
 
   return (
-    <div>
-      <div style={{
-        fontWeight: 600,
-        fontSize: 22,
-        margin: "32px 0 24px 0",
-        color: colors.text,
-        letterSpacing: 0.02
-      }}>
-        Add User
-      </div>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", maxWidth: 360, gap: 14 }}
-      >
+    <div style={{ padding: 32, maxWidth: 400 }}>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>Add User</h2>
+      <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 26 }}>
         <input
           type="text"
           placeholder="Username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
+          value={form.username}
+          onChange={e => setForm({ ...form, username: e.target.value })}
           style={{
-            borderRadius: 7,
-            border: `1.2px solid ${colors.border}`,
-            padding: "9px 11px",
-            fontSize: 16,
-            marginBottom: 2
+            borderRadius: 8,
+            border: `1.3px solid ${colors.border}`,
+            padding: "7px 12px",
+            background: colors.input,
+            color: colors.inputText,
+            fontSize: 15,
           }}
         />
         <input
           type="password"
           placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
+          value={form.password}
+          onChange={e => setForm({ ...form, password: e.target.value })}
           style={{
-            borderRadius: 7,
-            border: `1.2px solid ${colors.border}`,
-            padding: "9px 11px",
-            fontSize: 16,
-            marginBottom: 2
+            borderRadius: 8,
+            border: `1.3px solid ${colors.border}`,
+            padding: "7px 12px",
+            background: colors.input,
+            color: colors.inputText,
+            fontSize: 15,
           }}
         />
         <select
-          value={role}
-          onChange={e => setRole(e.target.value)}
+          value={form.role}
+          onChange={e => setForm({ ...form, role: e.target.value })}
           style={{
-            borderRadius: 7,
-            border: `1.2px solid ${colors.border}`,
-            padding: "9px 11px",
-            fontSize: 16,
-            marginBottom: 2
+            borderRadius: 8,
+            border: `1.3px solid ${colors.border}`,
+            padding: "7px 12px",
+            background: colors.input,
+            color: colors.inputText,
+            fontSize: 15,
           }}
         >
           <option value="user">User</option>
@@ -108,57 +101,49 @@ export default function AddUserPage({ colors }: any) {
             color: "#fff",
             border: "none",
             borderRadius: 8,
-            padding: "11px 0",
-            fontWeight: "bold",
-            fontSize: 17,
+            padding: "10px 0",
+            fontWeight: 700,
+            fontSize: 15,
+            marginTop: 2,
             cursor: "pointer",
-            marginTop: 6
           }}
         >
           Add User
         </button>
-        {err && <div style={{ color: colors.red, fontWeight: 500, marginTop: 2 }}>{err}</div>}
+        {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
       </form>
-      <div style={{
-        fontWeight: 500,
-        fontSize: 18,
-        margin: "34px 0 10px 0",
-        color: colors.text
-      }}>
-        Current Users
-      </div>
+
+      <h3 style={{ color: colors.text, fontWeight: 500, fontSize: 18, marginBottom: 12 }}>Current Users</h3>
       {loading ? (
-        <div style={{ color: colors.sub, padding: 18 }}>Loading...</div>
+        <div style={{ color: colors.sub }}>Loading…</div>
       ) : (
-        <table style={{ width: "100%", maxWidth: 480 }}>
+        <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Username</th>
-              <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Role</th>
+              <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
+              <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u: any) => (
-              <tr key={u.username}>
-                <td style={{ padding: "7px 10px" }}>{u.username}</td>
-                <td style={{ padding: "7px 10px" }}>{u.role}</td>
-                <td style={{ padding: "7px 10px" }}>
+            {users.map(u => (
+              <tr key={u.id}>
+                <td style={{ padding: "8px 10px" }}>{u.username}</td>
+                <td style={{ padding: "8px 10px" }}>{u.role}</td>
+                <td>
                   <button
-                    onClick={() => handleDelete(u.username)}
+                    onClick={() => handleDelete(u.id)}
                     style={{
                       background: colors.red,
                       color: "#fff",
                       border: "none",
                       borderRadius: 7,
-                      padding: "4px 14px",
                       fontWeight: 700,
                       fontSize: 14,
+                      padding: "4px 12px",
                       cursor: "pointer"
                     }}
-                  >
-                    Delete
-                  </button>
+                  >Delete</button>
                 </td>
               </tr>
             ))}
