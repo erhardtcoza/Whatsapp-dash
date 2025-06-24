@@ -1,109 +1,83 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-interface Reply {
-  id: number;
-  tag: string;
-  hours: string;
-  reply: string;
-}
+const TAGS = [
+  { key: "support", label: "Support" },
+  { key: "accounts", label: "Accounts" },
+  { key: "sales", label: "Sales" },
+  { key: "leads", label: "Leads" },
+];
 
-export default function AutoResponsePage({ colors }: { colors: any }) {
-  const [replies, setReplies] = useState<Reply[]>([]);
+export default function AutoResponsePage({ colors }: any) {
+  const [data, setData] = useState<any[]>([]);
   const [form, setForm] = useState({ id: 0, tag: "support", hours: "", reply: "" });
-  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadReplies();
+    fetch(`${API_BASE}/api/auto-replies`).then(r => r.json()).then(setData);
   }, []);
 
-  async function loadReplies() {
-    const res = await fetch(`${API_BASE}/api/auto-replies`);
-    const data = await res.json();
-    setReplies(data);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.reply.trim()) return;
-    await fetch(`${API_BASE}/api/auto-reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setForm({ id: 0, tag: "support", hours: "", reply: "" });
-    setMessage("Saved.");
-    loadReplies();
-  }
-
-  async function handleDelete(id: number) {
-    if (!confirm("Delete this auto-reply?")) return;
-    await fetch(`${API_BASE}/api/auto-reply-delete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    loadReplies();
-  }
-
-  function groupByTag(data: Reply[]) {
-    return data.reduce((acc: Record<string, Reply[]>, item) => {
+  function groupByTag(data: any[]) {
+    return data.reduce((acc: any, item: any) => {
       if (!acc[item.tag]) acc[item.tag] = [];
       acc[item.tag].push(item);
       return acc;
     }, {});
   }
 
-  const grouped = groupByTag(replies);
+  async function handleSave() {
+    setSaving(true);
+    await fetch(`${API_BASE}/api/auto-reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setForm({ id: 0, tag: "support", hours: "", reply: "" });
+    setSaving(false);
+    const updated = await fetch(`${API_BASE}/api/auto-replies`).then(r => r.json());
+    setData(updated);
+  }
+
+  async function handleDelete(id: number) {
+    await fetch(`${API_BASE}/api/auto-reply-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const updated = await fetch(`${API_BASE}/api/auto-replies`).then(r => r.json());
+    setData(updated);
+  }
+
+  const grouped = groupByTag(data);
 
   return (
     <div style={{ padding: 32 }}>
       <h2 style={{ color: colors.text, fontSize: 22, marginBottom: 20 }}>Auto Responses</h2>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 500, marginBottom: 30 }}>
-        <select value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value })} style={{ padding: 8 }}>
-          <option value="support">Support</option>
-          <option value="sales">Sales</option>
-          <option value="accounts">Accounts</option>
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 30 }}>
+        <select value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value })}>
+          {TAGS.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
         </select>
-        <input
-          placeholder="Hours (e.g. 08:00-17:00)"
-          value={form.hours}
-          onChange={e => setForm({ ...form, hours: e.target.value })}
-          style={{ padding: 8 }}
-        />
-        <textarea
-          placeholder="Auto-reply message"
-          value={form.reply}
-          onChange={e => setForm({ ...form, reply: e.target.value })}
-          rows={3}
-          style={{ padding: 8 }}
-        />
-        <button type="submit" style={{ background: colors.red, color: "#fff", padding: 10, fontWeight: 600, border: "none", borderRadius: 6 }}>
-          {form.id ? "Update" : "Add"} Auto Reply
-        </button>
-        {message && <div style={{ color: colors.sub }}>{message}</div>}
+        <input type="text" placeholder="Hours" value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })} />
+        <input type="text" placeholder="Reply" value={form.reply} onChange={e => setForm({ ...form, reply: e.target.value })} />
+        <button type="submit" disabled={saving}>Save</button>
       </form>
 
-      {Object.entries(grouped).map(([tag, items]) => (
+      {Object.entries(grouped).map(([tag, replies]: any) => (
         <div key={tag} style={{ marginBottom: 30 }}>
-          <h3 style={{ color: colors.text, marginBottom: 10 }}>{tag.toUpperCase()}</h3>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <h3 style={{ color: colors.red }}>{TAGS.find(t => t.key === tag)?.label}</h3>
+          <table>
             <thead>
-              <tr>
-                <th style={{ textAlign: "left", padding: 6 }}>Hours</th>
-                <th style={{ textAlign: "left", padding: 6 }}>Reply</th>
-                <th style={{ padding: 6 }}></th>
-              </tr>
+              <tr><th>Hours</th><th>Reply</th><th></th></tr>
             </thead>
             <tbody>
-              {items.map(r => (
+              {replies.map((r: any) => (
                 <tr key={r.id}>
-                  <td style={{ padding: 6, verticalAlign: "top", color: colors.td }}>{r.hours}</td>
-                  <td style={{ padding: 6, verticalAlign: "top", color: colors.td }}>{r.reply}</td>
-                  <td style={{ padding: 6 }}>
-                    <button onClick={() => setForm(r)} style={{ marginRight: 8 }}>Edit</button>
-                    <button onClick={() => handleDelete(r.id)} style={{ color: colors.red }}>Delete</button>
+                  <td>{r.hours}</td>
+                  <td>{r.reply}</td>
+                  <td>
+                    <button onClick={() => setForm(r)}>Edit</button>
+                    <button onClick={() => handleDelete(r.id)}>Delete</button>
                   </td>
                 </tr>
               ))}
