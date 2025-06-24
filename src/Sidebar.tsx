@@ -8,7 +8,8 @@ export default function Sidebar({
   search,
   setSearch,
   onDarkMode,
-  user
+  user,
+  onLogout
 }: any) {
   return (
     <div
@@ -27,7 +28,7 @@ export default function Sidebar({
       }}
     >
       {/* Logo */}
-      <div style={{ padding: "0 12px 18px 22px" }}>
+      <div style={{ padding: "0 12px 10px 22px" }}>
         <img
           src={vinetLogo}
           alt="Vinet"
@@ -38,6 +39,18 @@ export default function Sidebar({
           }}
         />
       </div>
+      {/* Username/role */}
+      {user && (
+        <div style={{
+          color: colors.sub,
+          fontSize: 14,
+          padding: "6px 14px 2px 24px",
+          fontWeight: 500,
+          marginBottom: 6,
+        }}>
+          {user.username} ({user.role})
+        </div>
+      )}
       {/* Menu */}
       <SidebarItem
         label="Unlinked Clients"
@@ -99,17 +112,15 @@ export default function Sidebar({
         selected={selected === "system"}
         onClick={() => onSelect("system")}
       />
-      {user?.role === "admin" && (
-        <SidebarItem
-          label="Add User"
-          icon="➕"
-          selected={selected === "adduser"}
-          onClick={() => onSelect("adduser")}
-        />
-      )}
+      <SidebarItem
+        label="Add User"
+        icon="➕"
+        selected={selected === "adduser"}
+        onClick={() => onSelect("adduser")}
+      />
       {/* Spacer */}
       <div style={{ flex: 1 }} />
-      {/* Search and dark mode */}
+      {/* Search */}
       <div style={{ padding: 12 }}>
         <input
           type="search"
@@ -127,6 +138,27 @@ export default function Sidebar({
             marginBottom: 9,
           }}
         />
+        {/* Logout */}
+        {user && (
+          <button
+            onClick={onLogout}
+            style={{
+              width: "100%",
+              background: colors.red,
+              color: "#fff",
+              border: "none",
+              borderRadius: 7,
+              padding: "9px 0",
+              fontWeight: 700,
+              fontSize: 15,
+              margin: "10px 0 0 0",
+              cursor: "pointer",
+            }}
+          >
+            Logout
+          </button>
+        )}
+        {/* Dark mode toggle */}
         <button
           onClick={onDarkMode}
           title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
@@ -139,7 +171,7 @@ export default function Sidebar({
             padding: "7px 0",
             fontWeight: 700,
             fontSize: 14,
-            marginTop: 2,
+            marginTop: 10,
             cursor: "pointer",
           }}
         >
