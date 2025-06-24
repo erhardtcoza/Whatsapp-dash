@@ -1,19 +1,14 @@
 import { useEffect, useState } from "react";
-import ChatPanel from "./ChatPanel";
 import { API_BASE } from "./config";
+import ChatPanel from "./ChatPanel";
 
-export default function AllChatsPage({ colors, darkMode }: any) {
+export default function AllChatsPage({ colors }: any) {
   const [chats, setChats] = useState<any[]>([]);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selected, setSelected] = useState<any | null>(null);
 
   useEffect(() => {
-    fetchChats();
-    // eslint-disable-next-line
-  }, []);
-
-  function fetchChats() {
     setLoading(true);
     fetch(`${API_BASE}/api/chats`)
       .then(res => {
@@ -22,91 +17,57 @@ export default function AllChatsPage({ colors, darkMode }: any) {
       })
       .then(data => {
         setChats(data);
-        if (data.length) setSelectedChat(data[0]);
+        setLoading(false);
       })
-      .catch(() => setError("Failed to fetch chats."))
-      .finally(() => setLoading(false));
-  }
+      .catch(() => {
+        setError("Failed to fetch chats.");
+        setLoading(false);
+      });
+  }, []);
 
-  if (loading) {
-    return <div style={{ padding: 32, color: colors.sub }}>Loading…</div>;
-  }
-  if (error) {
-    return <div style={{ padding: 32, color: colors.red }}>{error}</div>;
-  }
+  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
+  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
 
   return (
-    <div style={{ display: "flex", gap: 30, padding: "20px 0" }}>
-      {/* Left: chat list */}
-      <div style={{ flex: "0 0 350px" }}>
-        <table
-          style={{
-            width: "100%",
-            background: colors.card,
-            borderRadius: 10,
-            boxShadow: "0 2px 10px #0001",
-          }}
-        >
+    <div style={{ padding: 32, display: "flex", gap: 40 }}>
+      {/* Chat list */}
+      <div>
+        <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>All Chats</h2>
+        <table style={{
+          width: 380,
+          background: colors.card,
+          borderRadius: 10,
+          boxShadow: "0 2px 10px #0001",
+          minWidth: 350
+        }}>
           <thead>
             <tr style={{ background: colors.bg, color: colors.sub }}>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Phone</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Tag</th>
-              <th style={{ textAlign: "left", padding: "10px 18px" }}>Unread</th>
+              <th style={{ textAlign: "left", padding: "10px 16px" }}>Phone</th>
+              <th style={{ textAlign: "left", padding: "10px 16px" }}>Name</th>
+              <th style={{ textAlign: "left", padding: "10px 16px" }}>Unread</th>
             </tr>
           </thead>
           <tbody>
-            {chats.map((c, i) => {
-              const isSel = selectedChat?.from_number === c.from_number;
-              return (
-                <tr
-                  key={c.from_number || i}
-                  onClick={() => setSelectedChat(c)}
-                  style={{
-                    background: isSel ? colors.sidebarSel : "none",
-                    color: isSel ? "#fff" : colors.text,
-                    cursor: "pointer",
-                  }}
-                >
-                  <td style={{ padding: "10px 18px" }}>{c.from_number}</td>
-                  <td style={{ padding: "10px 18px" }}>
-                    {c.name || <span style={{ color: colors.sub }}>—</span>}
-                  </td>
-                  <td style={{ padding: "10px 18px" }}>
-                    {c.email || <span style={{ color: colors.sub }}>—</span>}
-                  </td>
-                  <td style={{ padding: "10px 18px" }}>
-                    {c.last_message || <span style={{ color: colors.sub }}>—</span>}
-                  </td>
-                  <td style={{ padding: "10px 18px" }}>
-                    {c.tag || <span style={{ color: colors.sub }}>—</span>}
-                  </td>
-                  <td style={{ padding: "10px 18px", color: colors.red }}>
-                    {c.unread_count || 0}
-                  </td>
-                </tr>
-              );
-            })}
+            {chats.map((c, i) => (
+              <tr
+                key={c.from_number || i}
+                style={{
+                  background: selected?.from_number === c.from_number ? colors.bg : "none",
+                  cursor: "pointer"
+                }}
+                onClick={() => setSelected(c)}
+              >
+                <td style={{ padding: "10px 16px", color: colors.text }}>{c.from_number}</td>
+                <td style={{ padding: "10px 16px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
+                <td style={{ padding: "10px 16px", color: colors.red, fontWeight: 700 }}>{c.unread_count || 0}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-
-      {/* Right: chat panel */}
+      {/* Chat panel */}
       <div style={{ flex: 1 }}>
-        {selectedChat ? (
-          <ChatPanel
-            chat={selectedChat}
-            colors={colors}
-            darkMode={darkMode}
-            key={selectedChat.from_number}
-          />
-        ) : (
-          <div style={{ padding: 32, color: colors.sub }}>
-            Select a chat to view.
-          </div>
-        )}
+        <ChatPanel phone={selected?.from_number} contact={selected} colors={colors} />
       </div>
     </div>
   );
