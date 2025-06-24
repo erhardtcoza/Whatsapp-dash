@@ -48,9 +48,8 @@ export default function AddUserPage({ colors }: any) {
   }
 
   return (
-    <div style={{ padding: 32, maxWidth: 400 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>Add User</h2>
-      <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 26 }}>
+    <div style={{ marginTop: 20 }}>
+      <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 400 }}>
         <input
           type="text"
           placeholder="Username"
@@ -113,13 +112,15 @@ export default function AddUserPage({ colors }: any) {
         {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
       </form>
 
-      <h3 style={{ color: colors.text, fontWeight: 500, fontSize: 18, marginBottom: 12 }}>Current Users</h3>
+      <div style={{ fontWeight: 500, fontSize: 18, margin: "34px 0 10px 0", color: colors.text }}>
+        Current Users
+      </div>
       {loading ? (
         <div style={{ color: colors.sub }}>Loading…</div>
       ) : (
         <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
           <thead>
-            <tr>
+            <tr style={{ color: colors.sub }}>
               <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
               <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
               <th></th>
@@ -128,8 +129,8 @@ export default function AddUserPage({ colors }: any) {
           <tbody>
             {users.map(u => (
               <tr key={u.id}>
-                <td style={{ padding: "8px 10px" }}>{u.username}</td>
-                <td style={{ padding: "8px 10px" }}>{u.role}</td>
+                <td style={{ padding: "8px 10px", color: colors.text }}>{u.username}</td>
+                <td style={{ padding: "8px 10px", color: colors.text }}>{u.role}</td>
                 <td>
                   <button
                     onClick={() => handleDelete(u.id)}
@@ -143,7 +144,9 @@ export default function AddUserPage({ colors }: any) {
                       padding: "4px 12px",
                       cursor: "pointer"
                     }}
-                  >Delete</button>
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
