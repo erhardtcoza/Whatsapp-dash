@@ -44,6 +44,46 @@ export default function ChatPanel({ phone, contact, colors }: any) {
     </div>
   );
 
+  function renderMessageBody(msg: any) {
+    // Text only (default)
+    if (msg.media_url && msg.media_url.endsWith(".jpg")) {
+      // Image message
+      return (
+        <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
+          <img
+            src={msg.media_url}
+            alt="WhatsApp Media"
+            style={{ maxWidth: 180, maxHeight: 180, borderRadius: 12, margin: "4px 0" }}
+          />
+        </a>
+      );
+    }
+    if (msg.location_json) {
+      // Location message
+      try {
+        const loc = JSON.parse(msg.location_json);
+        const mapsUrl = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
+        return (
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: colors.red, textDecoration: "underline", fontWeight: 600 }}
+          >
+            📍 View Location<br />
+            <span style={{ fontSize: 13, color: colors.text }}>
+              ({loc.latitude}, {loc.longitude})
+            </span>
+          </a>
+        );
+      } catch {
+        return "[Invalid location data]";
+      }
+    }
+    // Fallback: show body text
+    return msg.body;
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: 380, background: colors.bg, borderRadius: 12, marginTop: 28 }}>
       {/* Header */}
@@ -79,7 +119,7 @@ export default function ChatPanel({ phone, contact, colors }: any) {
                   }}
                   title={new Date(msg.timestamp).toLocaleString()}
                 >
-                  {msg.body}
+                  {renderMessageBody(msg)}
                 </div>
               </div>
             ))
