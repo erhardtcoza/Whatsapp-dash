@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { API_BASE } from "./config";
 
 export default function AddUserPage({ colors }: any) {
@@ -7,60 +7,43 @@ export default function AddUserPage({ colors }: any) {
   const [role, setRole] = useState("user");
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [err, setErr] = useState("");
 
-  useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line
-  }, []);
-
-  function fetchUsers() {
+  function loadUsers() {
     setLoading(true);
-    fetch(`${API_BASE}/api/users`)
+    fetch(`${API_BASE}/api/admins`)
       .then(res => res.json())
-      .then(setUsers)
-      .catch(() => setError("Failed to fetch users"))
-      .finally(() => setLoading(false));
+      .then(data => { setUsers(data); setLoading(false); });
   }
+
+  useEffect(() => { loadUsers(); }, []);
 
   function handleSubmit(e: any) {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-    if (!username.trim() || !password.trim()) {
-      setError("Username and password are required.");
-      return;
-    }
-    fetch(`${API_BASE}/api/add-user`, {
+    setErr("");
+    fetch(`${API_BASE}/api/add-admin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, role }),
+      body: JSON.stringify({ username, password, role })
     })
       .then(res => res.json())
-      .then(data => {
-        if (data.error) setError(data.error);
-        else {
-          setSuccess("User added.");
-          setUsername("");
-          setPassword("");
-          setRole("user");
-          fetchUsers();
-        }
+      .then(r => {
+        if (r.ok) {
+          setUsername(""); setPassword(""); setRole("user");
+          loadUsers();
+        } else setErr(r.error || "Failed to add user.");
       })
-      .catch(() => setError("Add user failed."));
+      .catch(() => setErr("Failed to add user."));
   }
 
   function handleDelete(username: string) {
-    if (!window.confirm(`Delete user "${username}"?`)) return;
-    fetch(`${API_BASE}/api/delete-user`, {
+    if (!window.confirm("Delete user?")) return;
+    fetch(`${API_BASE}/api/delete-admin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ username })
     })
-      .then(res => res.json())
-      .then(() => fetchUsers())
-      .catch(() => setError("Failed to delete user."));
+      .then(() => loadUsers());
   }
 
   return (
@@ -69,7 +52,8 @@ export default function AddUserPage({ colors }: any) {
         fontWeight: 600,
         fontSize: 22,
         margin: "32px 0 24px 0",
-        color: colors.text
+        color: colors.text,
+        letterSpacing: 0.02
       }}>
         Add User
       </div>
@@ -133,8 +117,7 @@ export default function AddUserPage({ colors }: any) {
         >
           Add User
         </button>
-        {error && <div style={{ color: colors.red, marginTop: 6 }}>{error}</div>}
-        {success && <div style={{ color: "green", marginTop: 6 }}>{success}</div>}
+        {err && <div style={{ color: colors.red, fontWeight: 500, marginTop: 2 }}>{err}</div>}
       </form>
       <div style={{
         fontWeight: 500,
@@ -144,41 +127,44 @@ export default function AddUserPage({ colors }: any) {
       }}>
         Current Users
       </div>
-      {loading && <div style={{ color: colors.sub, padding: 18 }}>Loading…</div>}
-      <table style={{ width: "100%", maxWidth: 480 }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Username</th>
-            <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Role</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u: any) => (
-            <tr key={u.username}>
-              <td style={{ padding: "7px 10px" }}>{u.username}</td>
-              <td style={{ padding: "7px 10px" }}>{u.role}</td>
-              <td style={{ padding: "7px 10px" }}>
-                <button
-                  onClick={() => handleDelete(u.username)}
-                  style={{
-                    background: colors.red,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 7,
-                    padding: "4px 14px",
-                    fontWeight: 700,
-                    fontSize: 14,
-                    cursor: "pointer"
-                  }}
-                >
-                  Delete
-                </button>
-              </td>
+      {loading ? (
+        <div style={{ color: colors.sub, padding: 18 }}>Loading...</div>
+      ) : (
+        <table style={{ width: "100%", maxWidth: 480 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Username</th>
+              <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Role</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((u: any) => (
+              <tr key={u.username}>
+                <td style={{ padding: "7px 10px" }}>{u.username}</td>
+                <td style={{ padding: "7px 10px" }}>{u.role}</td>
+                <td style={{ padding: "7px 10px" }}>
+                  <button
+                    onClick={() => handleDelete(u.username)}
+                    style={{
+                      background: colors.red,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 7,
+                      padding: "4px 14px",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: "pointer"
+                    }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
