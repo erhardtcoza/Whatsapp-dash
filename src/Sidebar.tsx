@@ -8,6 +8,7 @@ export default function Sidebar({
   search,
   setSearch,
   onDarkMode,
+  user
 }: any) {
   return (
     <div
@@ -98,12 +99,14 @@ export default function Sidebar({
         selected={selected === "system"}
         onClick={() => onSelect("system")}
       />
-      <SidebarItem
-        label="Add User"
-        icon="➕"
-        selected={selected === "adduser"}
-        onClick={() => onSelect("adduser")}
-      />
+      {user?.role === "admin" && (
+        <SidebarItem
+          label="Add User"
+          icon="➕"
+          selected={selected === "adduser"}
+          onClick={() => onSelect("adduser")}
+        />
+      )}
       {/* Spacer */}
       <div style={{ flex: 1 }} />
       {/* Search and dark mode */}
