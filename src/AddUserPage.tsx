@@ -13,15 +13,10 @@ export default function AddUserPage({ colors }: any) {
     setLoading(true);
     fetch(`${API_BASE}/api/admins`)
       .then(res => res.json())
-      .then(data => {
-        setUsers(data);
-        setLoading(false);
-      });
+      .then(data => { setUsers(data); setLoading(false); });
   }
 
-  useEffect(() => { 
-    loadUsers(); 
-  }, []);
+  useEffect(() => { loadUsers(); }, []);
 
   function handleSubmit(e: any) {
     e.preventDefault();
@@ -34,13 +29,9 @@ export default function AddUserPage({ colors }: any) {
       .then(res => res.json())
       .then(r => {
         if (r.ok) {
-          setUsername(""); 
-          setPassword(""); 
-          setRole("user");
+          setUsername(""); setPassword(""); setRole("user");
           loadUsers();
-        } else {
-          setErr(r.error || "Failed to add user.");
-        }
+        } else setErr(r.error || "Failed to add user.");
       })
       .catch(() => setErr("Failed to add user."));
   }
@@ -51,37 +42,49 @@ export default function AddUserPage({ colors }: any) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username })
-    }).then(() => loadUsers());
+    })
+      .then(() => loadUsers());
   }
 
   return (
-    <div style={{ marginTop: 20, maxWidth: 400 }}>
-      <form 
-        onSubmit={handleSubmit} 
-        style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+    <div>
+      <div style={{
+        fontWeight: 600,
+        fontSize: 22,
+        margin: "32px 0 24px 0",
+        color: colors.text,
+        letterSpacing: 0.02
+      }}>
+        Add User
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", maxWidth: 360, gap: 14 }}
       >
         <input
           type="text"
+          placeholder="Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
-          placeholder="Username"
           style={{
             borderRadius: 7,
             border: `1.2px solid ${colors.border}`,
-            padding: "10px 12px",
-            fontSize: 15
+            padding: "9px 11px",
+            fontSize: 16,
+            marginBottom: 2
           }}
         />
         <input
           type="password"
+          placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          placeholder="Password"
           style={{
             borderRadius: 7,
             border: `1.2px solid ${colors.border}`,
-            padding: "10px 12px",
-            fontSize: 15
+            padding: "9px 11px",
+            fontSize: 16,
+            marginBottom: 2
           }}
         />
         <select
@@ -90,10 +93,9 @@ export default function AddUserPage({ colors }: any) {
           style={{
             borderRadius: 7,
             border: `1.2px solid ${colors.border}`,
-            padding: "10px 12px",
-            fontSize: 15,
-            background: colors.input,
-            color: colors.inputText
+            padding: "9px 11px",
+            fontSize: 16,
+            marginBottom: 2
           }}
         >
           <option value="user">User</option>
@@ -105,42 +107,43 @@ export default function AddUserPage({ colors }: any) {
             background: colors.red,
             color: "#fff",
             border: "none",
-            borderRadius: 7,
-            padding: "10px 0",
-            fontWeight: 700,
-            cursor: "pointer"
+            borderRadius: 8,
+            padding: "11px 0",
+            fontWeight: "bold",
+            fontSize: 17,
+            cursor: "pointer",
+            marginTop: 6
           }}
         >
           Add User
         </button>
-        {err && (
-          <div style={{ color: colors.red, fontWeight: 500 }}>
-            {err}
-          </div>
-        )}
+        {err && <div style={{ color: colors.red, fontWeight: 500, marginTop: 2 }}>{err}</div>}
       </form>
-
-      <div style={{ fontWeight: 500, fontSize: 18, marginTop: 30, marginBottom: 10, color: colors.text }}>
+      <div style={{
+        fontWeight: 500,
+        fontSize: 18,
+        margin: "34px 0 10px 0",
+        color: colors.text
+      }}>
         Current Users
       </div>
-
       {loading ? (
-        <div style={{ color: colors.sub, padding: "12px 0" }}>Loading...</div>
+        <div style={{ color: colors.sub, padding: 18 }}>Loading...</div>
       ) : (
-        <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
+        <table style={{ width: "100%", maxWidth: 480 }}>
           <thead>
-            <tr style={{ background: colors.bg, color: colors.sub }}>
-              <th style={{ textAlign: "left", padding: "10px 14px" }}>Username</th>
-              <th style={{ textAlign: "left", padding: "10px 14px" }}>Role</th>
-              <th style={{ padding: "10px 14px" }}>Actions</th>
+            <tr>
+              <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Username</th>
+              <th style={{ textAlign: "left", padding: "7px 10px", color: colors.sub }}>Role</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {users.map((u: any) => (
               <tr key={u.username}>
-                <td style={{ padding: "10px 14px", color: colors.text }}>{u.username}</td>
-                <td style={{ padding: "10px 14px", color: colors.text }}>{u.role}</td>
-                <td style={{ padding: "10px 14px" }}>
+                <td style={{ padding: "7px 10px" }}>{u.username}</td>
+                <td style={{ padding: "7px 10px" }}>{u.role}</td>
+                <td style={{ padding: "7px 10px" }}>
                   <button
                     onClick={() => handleDelete(u.username)}
                     style={{
@@ -148,9 +151,9 @@ export default function AddUserPage({ colors }: any) {
                       color: "#fff",
                       border: "none",
                       borderRadius: 7,
-                      padding: "6px 12px",
+                      padding: "4px 14px",
                       fontWeight: 700,
-                      fontSize: 13,
+                      fontSize: 14,
                       cursor: "pointer"
                     }}
                   >
