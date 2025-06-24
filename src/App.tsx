@@ -14,6 +14,21 @@ import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import "./App.css";
 
+// Use this for correct, human-readable section titles
+const SECTION_TITLES: Record<string, string> = {
+  unlinked: "Unlinked Clients",
+  allchats: "All Chats",
+  support: "Support",
+  accounts: "Accounts",
+  sales: "Sales",
+  leads: "Leads",
+  broadcast: "Broadcast",
+  autoresp: "Auto Response",
+  office: "Office Hours",
+  system: "System",
+  adduser: "Add User"
+};
+
 export default function App() {
   useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
@@ -72,7 +87,7 @@ export default function App() {
       }}
     >
       <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
-        {section[0].toUpperCase() + section.slice(1).replace(/^\w/, m => m.toUpperCase())}
+        {SECTION_TITLES[section] || section}
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
         <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
