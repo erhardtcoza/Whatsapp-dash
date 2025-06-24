@@ -109,20 +109,21 @@ export default function App() {
         onDarkMode={() => setDarkMode((d) => !d)}
         user={user}
       />
-      <div style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        background: c.bg,
-        marginLeft: 190,
-      }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+          background: c.bg,
+        }}
+      >
         {topBar}
         <div
           style={{
             flex: 1,
-            width: "96%",
-            maxWidth: 880,
+            width: "100%",
+            maxWidth: 1100,
             minHeight: 420,
             background: c.card,
             borderRadius: 16,
