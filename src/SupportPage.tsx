@@ -1,69 +1,93 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-type Props = {
-  colors: any;
-  darkMode: boolean;
-  onSelectChat: (chat: any) => void;
-  selectedChat?: any;
-};
-
-export default function SupportPage({ colors, darkMode, onSelectChat, selectedChat }: Props) {
+export default function SupportPage({ colors }: any) {
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     fetch(`${API_BASE}/api/support-chats`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Failed");
+        return res.json();
+      })
       .then(data => { setChats(data); setLoading(false); })
       .catch(() => { setError("Could not load chats"); setLoading(false); });
   }, []);
 
-  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading...</div>;
-  if (error) return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
-  if (!chats.length) return <div style={{ padding: 48, color: colors.sub }}>No support chats found.</div>;
-
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>Support Chats</h2>
-      <table style={{ width: "100%", background: colors.card, borderRadius: 10, boxShadow: "0 2px 10px #0001" }}>
-        <thead>
-          <tr style={{ background: colors.bg, color: colors.sub }}>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Number</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Name</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Email</th>
-            <th style={{ textAlign: "left", padding: "10px 18px" }}>Last Message</th>
-          </tr>
-        </thead>
-        <tbody>
-          {chats.map((c, i) => (
-            <tr
-              key={c.from_number || i}
-              onClick={() => onSelectChat(c)}
-              style={{
-                cursor: "pointer",
-                background:
-                  selectedChat?.from_number === c.from_number
-                    ? darkMode
-                      ? "#332"
-                      : "#fff4f6"
-                    : undefined,
-                borderLeft:
-                  selectedChat?.from_number === c.from_number
-                    ? `5px solid ${colors.red}`
-                    : undefined,
-              }}
-            >
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.from_number}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.name || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.email || <span style={{ color: colors.sub }}>—</span>}</td>
-              <td style={{ padding: "10px 18px", color: colors.text }}>{c.last_message || <span style={{ color: colors.sub }}>—</span>}</td>
+    <div style={{ padding: "38px 36px", width: "100%" }}>
+      <h2 style={{ color: colors.red, fontWeight: 700, marginBottom: 20 }}>Support Chats</h2>
+      {error ? (
+        <div style={{ color: "red" }}>{error}</div>
+      ) : loading ? (
+        <div style={{ color: colors.text }}>Loading...</div>
+      ) : chats.length === 0 ? (
+        <div style={{ color: colors.sub }}>No open support chats.</div>
+      ) : (
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            background: colors.card,
+            color: colors.text,
+            borderRadius: 10,
+            boxShadow: "0 1px 7px #0001",
+            overflow: "hidden",
+          }}
+        >
+          <thead>
+            <tr style={{ background: colors.input }}>
+              <th style={th}>Name</th>
+              <th style={th}>Number</th>
+              <th style={th}>Email</th>
+              <th style={th}>Last Message</th>
+              <th style={th}>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {chats.map((c) => (
+              <tr key={c.from_number}>
+                <td style={td}>{c.name || <span style={{ color: colors.sub }}>N/A</span>}</td>
+                <td style={td}>{c.from_number}</td>
+                <td style={td}>{c.email || <span style={{ color: colors.sub }}>N/A</span>}</td>
+                <td style={td}>{c.last_message || ""}</td>
+                <td style={td}>
+                  <button
+                    style={{
+                      background: colors.red,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "5px 14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontSize: 14,
+                    }}
+                    onClick={() => alert("Open chat/handle reply here")}
+                  >
+                    Open
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
+
+const th = {
+  padding: "10px 8px",
+  textAlign: "left" as const,
+  fontWeight: 700,
+  fontSize: 15,
+  borderBottom: "2px solid #eaeaea",
+};
+const td = {
+  padding: "10px 8px",
+  fontSize: 15,
+  borderBottom: "1px solid #eaeaea",
+};

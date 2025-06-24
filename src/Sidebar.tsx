@@ -1,20 +1,14 @@
 import vinetLogo from "./assets/logo.jpeg";
 
-type Props = {
-  selected: string;
-  onSelect: (section: string) => void;
-  colors: any;
-  search: string;
-  setSearch: (v: string) => void;
-};
-
 export default function Sidebar({
   selected,
   onSelect,
+  darkMode,
   colors,
   search,
   setSearch,
-}: Props) {
+  onDarkMode,
+}: any) {
   return (
     <div
       style={{
@@ -31,6 +25,7 @@ export default function Sidebar({
         zIndex: 20,
       }}
     >
+      {/* Logo */}
       <div style={{ padding: "0 12px 18px 22px" }}>
         <img
           src={vinetLogo}
@@ -38,10 +33,11 @@ export default function Sidebar({
           style={{
             width: 80,
             marginBottom: 6,
-            filter: "none",
+            filter: darkMode ? "brightness(0.86)" : "none",
           }}
         />
       </div>
+      {/* Menu */}
       <SidebarItem
         label="Unlinked Clients"
         icon="🔗"
@@ -54,7 +50,63 @@ export default function Sidebar({
         selected={selected === "allchats"}
         onClick={() => onSelect("allchats")}
       />
+      <SidebarItem
+        label="Support"
+        icon="🛠️"
+        selected={selected === "support"}
+        onClick={() => onSelect("support")}
+      />
+      <SidebarItem
+        label="Accounts"
+        icon="💳"
+        selected={selected === "accounts"}
+        onClick={() => onSelect("accounts")}
+      />
+      <SidebarItem
+        label="Sales"
+        icon="💼"
+        selected={selected === "sales"}
+        onClick={() => onSelect("sales")}
+      />
+      <SidebarItem
+        label="Leads"
+        icon="📈"
+        selected={selected === "leads"}
+        onClick={() => onSelect("leads")}
+      />
+      <SidebarItem
+        label="Broadcast"
+        icon="📢"
+        selected={selected === "broadcast"}
+        onClick={() => onSelect("broadcast")}
+      />
+      <SidebarItem
+        label="Auto Response"
+        icon="⚡️"
+        selected={selected === "autoresp"}
+        onClick={() => onSelect("autoresp")}
+      />
+      <SidebarItem
+        label="Office Hours"
+        icon="⏰"
+        selected={selected === "office"}
+        onClick={() => onSelect("office")}
+      />
+      <SidebarItem
+        label="System"
+        icon="🛠️"
+        selected={selected === "system"}
+        onClick={() => onSelect("system")}
+      />
+      <SidebarItem
+        label="Add User"
+        icon="➕"
+        selected={selected === "adduser"}
+        onClick={() => onSelect("adduser")}
+      />
+      {/* Spacer */}
       <div style={{ flex: 1 }} />
+      {/* Search and dark mode */}
       <div style={{ padding: 12 }}>
         <input
           type="search"
@@ -72,6 +124,24 @@ export default function Sidebar({
             marginBottom: 9,
           }}
         />
+        <button
+          onClick={onDarkMode}
+          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          style={{
+            width: "100%",
+            background: colors.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 7,
+            padding: "7px 0",
+            fontWeight: 700,
+            fontSize: 14,
+            marginTop: 2,
+            cursor: "pointer",
+          }}
+        >
+          {darkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
+        </button>
       </div>
     </div>
   );
