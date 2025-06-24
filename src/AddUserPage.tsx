@@ -71,118 +71,120 @@ export default function AddUserPage({ colors }: { colors: any }) {
     }
   }
 
-  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading users…</div>;
-  if (error)   return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
+  if (loading) return <div style={{ padding: 32, color: colors.sub }}>Loading users…</div>;
+  if (error) return <div style={{ padding: 32, color: colors.red }}>{error}</div>;
 
   return (
-    <div style={{ padding: 32, maxWidth: 400 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
-        Add User
-      </h2>
-
-      <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 26 }}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={form.username}
-          onChange={e => setForm({ ...form, username: e.target.value })}
-          style={{
-            borderRadius: 8,
-            border: `1.3px solid ${colors.border}`,
-            padding: "7px 12px",
-            background: colors.input,
-            color: colors.inputText,
-            fontSize: 15,
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={e => setForm({ ...form, password: e.target.value })}
-          style={{
-            borderRadius: 8,
-            border: `1.3px solid ${colors.border}`,
-            padding: "7px 12px",
-            background: colors.input,
-            color: colors.inputText,
-            fontSize: 15,
-          }}
-        />
-        <select
-          value={form.role}
-          onChange={e => setForm({ ...form, role: e.target.value })}
-          style={{
-            borderRadius: 8,
-            border: `1.3px solid ${colors.border}`,
-            padding: "7px 12px",
-            background: colors.input,
-            color: colors.inputText,
-            fontSize: 15,
-          }}
-        >
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button
-          type="submit"
-          style={{
-            background: colors.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "10px 0",
-            fontWeight: 700,
-            fontSize: 15,
-            cursor: "pointer",
-          }}
-        >
+    <div style={{ padding: "20px", boxSizing: "border-box", width: "100%", height: "100vh", overflowY: "auto" }}>
+      <div style={{ maxWidth: 600 }}>
+        <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
           Add User
-        </button>
-        {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
-      </form>
+        </h2>
 
-      <h3 style={{ color: colors.text, fontWeight: 500, fontSize: 18, marginBottom: 12 }}>
-        Current Users
-      </h3>
-      {users.length === 0 ? (
-        <div style={{ color: colors.sub }}>No users found.</div>
-      ) : (
-        <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
-              <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                <td style={{ padding: "8px 10px" }}>{u.username}</td>
-                <td style={{ padding: "8px 10px" }}>{u.role}</td>
-                <td>
-                  <button
-                    onClick={() => handleDelete(u.id)}
-                    style={{
-                      background: colors.red,
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 7,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      padding: "4px 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Delete
-                  </button>
-                </td>
+        <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 26 }}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={form.username}
+            onChange={e => setForm({ ...form, username: e.target.value })}
+            style={{
+              borderRadius: 8,
+              border: `1.3px solid ${colors.border}`,
+              padding: "7px 12px",
+              background: colors.input,
+              color: colors.inputText,
+              fontSize: 15,
+            }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={e => setForm({ ...form, password: e.target.value })}
+            style={{
+              borderRadius: 8,
+              border: `1.3px solid ${colors.border}`,
+              padding: "7px 12px",
+              background: colors.input,
+              color: colors.inputText,
+              fontSize: 15,
+            }}
+          />
+          <select
+            value={form.role}
+            onChange={e => setForm({ ...form, role: e.target.value })}
+            style={{
+              borderRadius: 8,
+              border: `1.3px solid ${colors.border}`,
+              padding: "7px 12px",
+              background: colors.input,
+              color: colors.inputText,
+              fontSize: 15,
+            }}
+          >
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button
+            type="submit"
+            style={{
+              background: colors.red,
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 0",
+              fontWeight: 700,
+              fontSize: 15,
+              cursor: "pointer",
+            }}
+          >
+            Add User
+          </button>
+          {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
+        </form>
+
+        <h3 style={{ color: colors.text, fontWeight: 500, fontSize: 18, marginBottom: 12 }}>
+          Current Users
+        </h3>
+        {users.length === 0 ? (
+          <div style={{ color: colors.sub }}>No users found.</div>
+        ) : (
+          <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
+            <thead>
+              <tr style={{ background: colors.bg, color: colors.sub }}>
+                <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
+                <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
+                <th style={{ padding: "8px 10px" }}></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td style={{ padding: "8px 10px" }}>{u.username}</td>
+                  <td style={{ padding: "8px 10px" }}>{u.role}</td>
+                  <td style={{ padding: "8px 10px" }}>
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      style={{
+                        background: colors.red,
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 7,
+                        fontWeight: 700,
+                        fontSize: 14,
+                        padding: "4px 12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
