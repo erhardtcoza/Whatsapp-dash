@@ -48,8 +48,18 @@ export default function AddUserPage({ colors }: any) {
   }
 
   return (
-    <div style={{ marginTop: 20 }}>
-      <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 400 }}>
+    <div style={{ padding: "20px 0" }}>
+      <form
+        onSubmit={handleAdd}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          width: "100%",
+          maxWidth: 400,
+          marginBottom: 20
+        }}
+      >
         <input
           type="text"
           placeholder="Username"
@@ -103,7 +113,6 @@ export default function AddUserPage({ colors }: any) {
             padding: "10px 0",
             fontWeight: 700,
             fontSize: 15,
-            marginTop: 2,
             cursor: "pointer",
           }}
         >
@@ -112,7 +121,7 @@ export default function AddUserPage({ colors }: any) {
         {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
       </form>
 
-      <div style={{ fontWeight: 500, fontSize: 18, margin: "34px 0 10px 0", color: colors.text }}>
+      <div style={{ fontWeight: 500, fontSize: 18, color: colors.text, marginBottom: 12 }}>
         Current Users
       </div>
       {loading ? (
