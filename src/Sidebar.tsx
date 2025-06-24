@@ -6,6 +6,10 @@ interface SidebarProps {
   colors: any;
   search: string;
   setSearch: (val: string) => void;
+  darkMode: boolean;
+  user: { username: string; role: string };
+  onLogout: () => void;
+  onDarkMode: () => void;
 }
 
 export default function Sidebar({
@@ -14,16 +18,23 @@ export default function Sidebar({
   colors,
   search,
   setSearch,
+  darkMode,
+  user,
+  onLogout,
+  onDarkMode,
 }: SidebarProps) {
   const menuItems = [
     { label: "All Chats", icon: "💬", key: "allchats" },
-    { label: "Unverified", icon: "🔗", key: "unverified" },
+    { label: "Unlinked", icon: "🔗", key: "unlinked" },
     { label: "Support", icon: "🛠️", key: "support" },
     { label: "Accounts", icon: "💳", key: "accounts" },
     { label: "Sales", icon: "💼", key: "sales" },
     { label: "Leads", icon: "📈", key: "leads" },
-    { label: "Add User", icon: "➕", key: "adduser" },
+    { label: "Broadcast", icon: "📢", key: "broadcast" },
+    { label: "Auto Response", icon: "🤖", key: "autoresp" },
     { label: "Office Hours", icon: "⏰", key: "office" },
+    { label: "System", icon: "⚙️", key: "system" },
+    ...(user.role === "admin" ? [{ label: "Add User", icon: "➕", key: "adduser" }] : []),
   ];
 
   return (
@@ -49,7 +60,7 @@ export default function Sidebar({
         />
       </div>
 
-      {menuItems.map(item => (
+      {menuItems.map((item) => (
         <SidebarItem
           key={item.key}
           label={item.label}
@@ -66,7 +77,7 @@ export default function Sidebar({
           type="search"
           placeholder="Search…"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           style={{
             width: "100%",
             borderRadius: 7,
@@ -77,6 +88,39 @@ export default function Sidebar({
             fontSize: 14,
           }}
         />
+      </div>
+
+      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+        <button
+          onClick={onDarkMode}
+          style={{
+            background: "none",
+            color: colors.sidebarTxt,
+            border: `1px solid ${colors.border}`,
+            borderRadius: 6,
+            padding: "5px 10px",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
+        </button>
+
+        <button
+          onClick={onLogout}
+          style={{
+            background: colors.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 10px",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
       </div>
     </div>
   );
