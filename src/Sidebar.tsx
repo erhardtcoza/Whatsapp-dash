@@ -1,79 +1,172 @@
-import React, { useState, useEffect } from "react";
+import vinetLogo from "./assets/logo.jpeg";
 
-// You may want to add search or other controls—here’s the base version:
-export default function Sidebar({ onSelectChat, selectedPhone }) {
-  const [chats, setChats] = useState([]);
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    fetch("https://w-api.vinetdns.co.za/api/chats")
-      .then(res => res.json())
-      .then(setChats);
-  }, []);
-
-  // Filter chats by search input
-  const filteredChats = chats.filter(chat => {
-    const target = (chat.name || chat.email || chat.from_number || "").toLowerCase();
-    return target.includes(search.toLowerCase());
-  });
-
+export default function Sidebar({
+  selected,
+  onSelect,
+  darkMode,
+  colors,
+  search,
+  setSearch,
+  onDarkMode,
+}: any) {
   return (
-    <div className="w-80 bg-[#f7f7fa] border-r border-gray-200 h-full flex flex-col">
-      {/* Logo and Header */}
-      <div className="flex items-center px-4 py-4 border-b border-gray-200 bg-white">
+    <div
+      style={{
+        width: 190,
+        height: "100vh",
+        background: colors.sidebar,
+        borderRight: `1.5px solid ${colors.border}`,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        position: "fixed",
+        left: 0,
+        top: 0,
+        zIndex: 20,
+      }}
+    >
+      {/* Logo */}
+      <div style={{ padding: "0 12px 18px 22px" }}>
         <img
-          src="https://static.vinet.co.za/logo.jpeg"
-          alt="Vinet Logo"
-          className="h-8 w-8 mr-3 rounded"
+          src={vinetLogo}
+          alt="Vinet"
+          style={{
+            width: 80,
+            marginBottom: 6,
+            filter: darkMode ? "brightness(0.86)" : "none",
+          }}
         />
-        <span className="text-xl font-bold text-red-700">Vinet WhatsApp Admin</span>
       </div>
-
-      {/* Search box */}
-      <div className="px-4 py-2 bg-white border-b border-gray-200">
+      {/* Menu */}
+      <SidebarItem
+        label="Unlinked Clients"
+        icon="🔗"
+        selected={selected === "unlinked"}
+        onClick={() => onSelect("unlinked")}
+      />
+      <SidebarItem
+        label="All Chats"
+        icon="💬"
+        selected={selected === "allchats"}
+        onClick={() => onSelect("allchats")}
+      />
+      <SidebarItem
+        label="Support"
+        icon="🛠️"
+        selected={selected === "support"}
+        onClick={() => onSelect("support")}
+      />
+      <SidebarItem
+        label="Accounts"
+        icon="💳"
+        selected={selected === "accounts"}
+        onClick={() => onSelect("accounts")}
+      />
+      <SidebarItem
+        label="Sales"
+        icon="💼"
+        selected={selected === "sales"}
+        onClick={() => onSelect("sales")}
+      />
+      <SidebarItem
+        label="Leads"
+        icon="📈"
+        selected={selected === "leads"}
+        onClick={() => onSelect("leads")}
+      />
+      <SidebarItem
+        label="Broadcast"
+        icon="📢"
+        selected={selected === "broadcast"}
+        onClick={() => onSelect("broadcast")}
+      />
+      <SidebarItem
+        label="Auto Response"
+        icon="⚡️"
+        selected={selected === "autoresp"}
+        onClick={() => onSelect("autoresp")}
+      />
+      <SidebarItem
+        label="Office Hours"
+        icon="⏰"
+        selected={selected === "office"}
+        onClick={() => onSelect("office")}
+      />
+      <SidebarItem
+        label="System"
+        icon="🛠️"
+        selected={selected === "system"}
+        onClick={() => onSelect("system")}
+      />
+      <SidebarItem
+        label="Add User"
+        icon="➕"
+        selected={selected === "adduser"}
+        onClick={() => onSelect("adduser")}
+      />
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+      {/* Search and dark mode */}
+      <div style={{ padding: 12 }}>
         <input
-          type="text"
+          type="search"
+          placeholder="Search…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search chats"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-700"
+          style={{
+            width: "100%",
+            borderRadius: 7,
+            border: `1.3px solid ${colors.border}`,
+            padding: "6px 10px",
+            background: colors.input,
+            color: colors.inputText,
+            fontSize: 14,
+            marginBottom: 9,
+          }}
         />
+        <button
+          onClick={onDarkMode}
+          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          style={{
+            width: "100%",
+            background: colors.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 7,
+            padding: "7px 0",
+            fontWeight: 700,
+            fontSize: 14,
+            marginTop: 2,
+            cursor: "pointer",
+          }}
+        >
+          {darkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
+        </button>
       </div>
+    </div>
+  );
+}
 
-      {/* Chat list */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredChats.length === 0 && (
-          <div className="px-4 py-8 text-gray-400 text-center text-sm">No chats found</div>
-        )}
-        {filteredChats.map(chat => (
-          <div
-            key={chat.from_number}
-            onClick={() => onSelectChat(chat)}
-            className={`px-4 py-3 cursor-pointer border-b border-gray-100 flex items-center justify-between
-              ${selectedPhone === chat.from_number ? "bg-red-50" : "hover:bg-gray-100"}
-            `}
-          >
-            <div>
-              <div className="font-semibold text-sm truncate w-44">
-                {chat.name || chat.email || chat.from_number}
-              </div>
-              <div className="text-xs text-gray-500 truncate w-44">{chat.last_message}</div>
-            </div>
-            <div className="flex items-center">
-              {chat.unread_count > 0 && (
-                <span className="inline-block bg-red-600 text-white text-xs rounded-full px-2 ml-2">
-                  {chat.unread_count}
-                </span>
-              )}
-              {chat.tag && (
-                <span className="ml-2 text-xs bg-gray-200 rounded px-2 py-0.5 text-gray-700 capitalize">
-                  {chat.tag}
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+function SidebarItem({ label, icon, selected, onClick }: any) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: "8px 14px 8px 22px",
+        fontWeight: 500,
+        fontSize: 15,
+        color: selected ? "#fff" : undefined,
+        background: selected ? "#e2001a" : "none",
+        borderRadius: 8,
+        marginBottom: 1,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        position: "relative",
+      }}
+    >
+      <span style={{ marginRight: 10, fontSize: 17 }}>{icon}</span>
+      {label}
     </div>
   );
 }
