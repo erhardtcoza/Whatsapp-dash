@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-export default function AddUserPage({ colors }: any) {
-  const [users, setUsers] = useState<any[]>([]);
+interface User {
+  id: number;
+  username: string;
+  role: string;
+}
+
+export default function AddUserPage({ colors }: { colors: any }) {
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({ username: "", password: "", role: "user" });
   const [message, setMessage] = useState("");
 
@@ -11,55 +18,69 @@ export default function AddUserPage({ colors }: any) {
     fetchUsers();
   }, []);
 
-  function fetchUsers() {
+  async function fetchUsers() {
     setLoading(true);
-    fetch(`${API_BASE}/api/users`)
-      .then(res => res.json())
-      .then(setUsers)
-      .finally(() => setLoading(false));
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/users`);
+      if (!res.ok) throw new Error("Failed to fetch users.");
+      const data = await res.json();
+      setUsers(data);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function handleAdd(e: any) {
+  async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setMessage("");
     if (!form.username.trim() || !form.password.trim()) {
       setMessage("Username and password are required.");
       return;
     }
-    await fetch(`${API_BASE}/api/add-user`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    setForm({ username: "", password: "", role: "user" });
-    setMessage("User added.");
-    fetchUsers();
+    try {
+      const res = await fetch(`${API_BASE}/api/add-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Failed to add user.");
+      setForm({ username: "", password: "", role: "user" });
+      setMessage("User added.");
+      fetchUsers();
+    } catch (e: any) {
+      setMessage(e.message);
+    }
   }
 
   async function handleDelete(id: number) {
     if (!window.confirm("Delete this user?")) return;
-    await fetch(`${API_BASE}/api/delete-user`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id })
-    });
-    setMessage("User deleted.");
-    fetchUsers();
+    try {
+      const res = await fetch(`${API_BASE}/api/delete-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Failed to delete user.");
+      setMessage("User deleted.");
+      fetchUsers();
+    } catch (e: any) {
+      setMessage(e.message);
+    }
   }
 
+  if (loading) return <div style={{ padding: 48, color: colors.sub }}>Loading users…</div>;
+  if (error)   return <div style={{ padding: 48, color: colors.red }}>{error}</div>;
+
   return (
-    <div style={{ padding: "20px 0" }}>
-      <form
-        onSubmit={handleAdd}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-          width: "100%",
-          maxWidth: 400,
-          marginBottom: 20
-        }}
-      >
+    <div style={{ padding: 32, maxWidth: 400 }}>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
+        Add User
+      </h2>
+
+      <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 26 }}>
         <input
           type="text"
           placeholder="Username"
@@ -121,15 +142,15 @@ export default function AddUserPage({ colors }: any) {
         {message && <div style={{ color: colors.red, fontWeight: 600 }}>{message}</div>}
       </form>
 
-      <div style={{ fontWeight: 500, fontSize: 18, color: colors.text, marginBottom: 12 }}>
+      <h3 style={{ color: colors.text, fontWeight: 500, fontSize: 18, marginBottom: 12 }}>
         Current Users
-      </div>
-      {loading ? (
-        <div style={{ color: colors.sub }}>Loading…</div>
+      </h3>
+      {users.length === 0 ? (
+        <div style={{ color: colors.sub }}>No users found.</div>
       ) : (
         <table style={{ width: "100%", background: colors.card, borderRadius: 10 }}>
           <thead>
-            <tr style={{ color: colors.sub }}>
+            <tr>
               <th style={{ textAlign: "left", padding: "8px 10px" }}>Username</th>
               <th style={{ textAlign: "left", padding: "8px 10px" }}>Role</th>
               <th></th>
@@ -138,8 +159,8 @@ export default function AddUserPage({ colors }: any) {
           <tbody>
             {users.map(u => (
               <tr key={u.id}>
-                <td style={{ padding: "8px 10px", color: colors.text }}>{u.username}</td>
-                <td style={{ padding: "8px 10px", color: colors.text }}>{u.role}</td>
+                <td style={{ padding: "8px 10px" }}>{u.username}</td>
+                <td style={{ padding: "8px 10px" }}>{u.role}</td>
                 <td>
                   <button
                     onClick={() => handleDelete(u.id)}
@@ -151,7 +172,7 @@ export default function AddUserPage({ colors }: any) {
                       fontWeight: 700,
                       fontSize: 14,
                       padding: "4px 12px",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                   >
                     Delete
