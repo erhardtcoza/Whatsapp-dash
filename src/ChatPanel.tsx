@@ -1,218 +1,245 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "./config";
 
-export default function ChatPanel({
-  phone,
-  contact,
-  colors,
-  onCloseChat
-}: any) {
-  const [msgs, setMsgs]   = useState<any[]>([]);
-  const [input, setInput] = useState("");
-  const [form, setForm]   = useState({
-    customer_id: contact?.customer_id || "",
-    first_name: "",
-    last_name: ""
-  });
+export default function ChatPanel({ phone, contact, colors, onCloseChat }: any) {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // load messages
   useEffect(() => {
     if (!phone) return;
+    setLoading(true);
     fetch(`${API_BASE}/api/messages?phone=${phone}`)
-      .then(r => r.json())
-      .then(setMsgs);
+      .then(res => res.json())
+      .then(setMessages)
+      .finally(() => setLoading(false));
+  }, [phone]);
 
-    // seed form
-    setForm({
-      customer_id: contact?.customer_id || "",
-      first_name: contact?.name?.split(" ")[0] || "",
-      last_name: contact?.name?.split(" ").slice(1).join(" ") || ""
-    });
-  }, [phone, contact]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // send message
-  async function send() {
-    if (!input) return;
+  async function sendReply(e: any) {
+    e.preventDefault();
+    if (!reply.trim()) return;
+    setSending(true);
     await fetch(`${API_BASE}/api/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, body: input })
+      body: JSON.stringify({ phone, body: reply })
     });
-    setInput("");
-    const updated = await fetch(`${API_BASE}/api/messages?phone=${phone}`).then(r=>r.json());
-    setMsgs(updated);
+    setReply("");
+    fetch(`${API_BASE}/api/messages?phone=${phone}`)
+      .then(res => res.json())
+      .then(setMessages)
+      .finally(() => setSending(false));
   }
 
-  // save manual customer info
-  function saveClient() {
-    fetch(`${API_BASE}/api/update-customer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone,
-        customer_id: form.customer_id,
-        name: `${form.first_name} ${form.last_name}`.trim(),
-        email: contact?.email || ""
-      })
-    });
+  // Format display name
+  let displayName = phone;
+  if (contact?.customer_id && contact?.name) {
+    displayName = `[${contact.customer_id}] ${contact.name}`;
+  } else if (contact?.name) {
+    displayName = contact.name;
+  } else if (contact?.email) {
+    displayName = contact.email;
   }
 
-  if (!phone) {
-    return (
-      <div style={{
-        flex: 1,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: colors.sub
-      }}>
-        Select a chat to begin
-      </div>
-    );
+  function renderMessageBody(msg: any) {
+    // 1. IMAGE
+    if (msg.media_url && /\.(jpe?g|png|gif|webp)$/i.test(msg.media_url)) {
+      return (
+        <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
+          <img
+            src={msg.media_url}
+            alt="WhatsApp Media"
+            style={{ maxWidth: 180, maxHeight: 180, borderRadius: 12, margin: "4px 0" }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        </a>
+      );
+    }
+
+    // 2. AUDIO/VOICE NOTE
+    if (msg.media_url && /\.(mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url)) {
+      if (
+        msg.body?.toLowerCase().includes("voice") ||
+        msg.body?.toLowerCase().includes("[audio]")
+      ) {
+        return (
+          <div style={{ color: "red", fontWeight: 600 }}>
+            Voice notes are not accepted. Sender was notified.
+          </div>
+        );
+      }
+      return (
+        <audio controls style={{ margin: "8px 0", width: 180 }}>
+          <source src={msg.media_url} />
+          Your browser does not support audio playback.
+        </audio>
+      );
+    }
+
+    // 3. LOCATION
+    if (msg.location_json) {
+      try {
+        const loc = JSON.parse(msg.location_json);
+        const mapsUrl = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
+        return (
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: colors.red, textDecoration: "underline", fontWeight: 600 }}
+          >
+            📍 View Location<br />
+            <span style={{ fontSize: 13, color: colors.text }}>
+              ({loc.latitude}, {loc.longitude})
+            </span>
+          </a>
+        );
+      } catch {
+        return "[Invalid location data]";
+      }
+    }
+
+    // 4. DOCUMENTS/OTHER FILES
+    if (
+      msg.media_url && (
+        /\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar)$/i.test(msg.media_url) ||
+        !/\.(jpe?g|png|gif|webp|mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url) // unknown file type
+      )
+    ) {
+      const filename = msg.media_url.split("/").pop()?.split("?")[0] || "Download";
+      return (
+        <a
+          href={msg.media_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: colors.red, fontWeight: 600, textDecoration: "underline" }}
+        >
+          📎 {filename}
+        </a>
+      );
+    }
+
+    // 5. FALLBACK: BODY
+    return msg.body;
   }
+
+  if (!phone) return (
+    <div style={{ color: colors.sub, padding: 40, textAlign: "center" }}>
+      Select a chat to view conversation.
+    </div>
+  );
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      width: "100%",
-      height: "100%"
-    }}>
-      {/* header (fixed height) */}
+    <div style={{ display: "flex", flexDirection: "column", height: 380, background: colors.bg, borderRadius: 12, marginTop: 28 }}>
+      {/* Header */}
       <div style={{
-        flexShrink: 0,
+        background: colors.card,
+        padding: 16,
+        fontWeight: 600,
+        color: colors.red,
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: 16,
-        borderBottom: `1px solid ${colors.border}`,
-        height: 60,
-        boxSizing: "border-box"
+        justifyContent: "space-between"
       }}>
-        <input
-          placeholder="Customer ID"
-          value={form.customer_id}
-          onChange={e => setForm({...form,customer_id:e.target.value})}
-          style={{
-            width: 120,
-            padding: 8,
-            borderRadius: 6,
-            border: `1px solid ${colors.border}`
-          }}
-        />
-        <input
-          placeholder="First name"
-          value={form.first_name}
-          onChange={e => setForm({...form,first_name:e.target.value})}
-          style={{
-            width: 120,
-            padding: 8,
-            borderRadius: 6,
-            border: `1px solid ${colors.border}`
-          }}
-        />
-        <input
-          placeholder="Last name"
-          value={form.last_name}
-          onChange={e => setForm({...form,last_name:e.target.value})}
-          style={{
-            width: 120,
-            padding: 8,
-            borderRadius: 6,
-            border: `1px solid ${colors.border}`
-          }}
-        />
+        <span>{displayName}</span>
         <button
-          onClick={saveClient}
+          onClick={onCloseChat}
           style={{
             background: colors.red,
             color: "#fff",
             border: "none",
-            borderRadius: 6,
-            padding: "8px 16px",
-            cursor: "pointer"
-          }}
-        >
-          Save
-        </button>
-        <button
-          onClick={onCloseChat}
-          style={{
-            marginLeft: "auto",
-            background: "transparent",
-            border: "none",
-            color: colors.red,
-            cursor: "pointer"
+            borderRadius: 8,
+            padding: "5px 18px",
+            fontWeight: 700,
+            fontSize: 15,
+            marginLeft: 14,
+            cursor: "pointer",
           }}
         >
           Close Chat
         </button>
       </div>
-
-      {/* message list (flex:1, scrollable) */}
-      <div style={{
-        flex: 1,
-        overflowY: "auto",
-        padding: 16,
-        background: colors.bg,
-        boxSizing: "border-box"
-      }}>
-        {msgs.map(m => (
-          <div
-            key={m.id}
-            style={{
-              marginBottom: 12,
-              textAlign: m.direction === "outgoing" ? "right" : "left"
-            }}
-          >
-            <div style={{
-              display: "inline-block",
-              padding: "8px 12px",
-              borderRadius: 12,
-              background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
-              color: m.direction === "outgoing" ? "#fff" : colors.text
-            }}>
-              {m.body}
-            </div>
-          </div>
-        ))}
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 10px 18px", background: colors.bg }}>
+        {loading ? (
+          <div style={{ color: colors.sub, textAlign: "center" }}>Loading…</div>
+        ) : (
+          messages.length === 0 ? (
+            <div style={{ color: colors.sub, textAlign: "center", marginTop: 40 }}>No messages</div>
+          ) : (
+            messages.map((msg: any) => (
+              <div
+                key={msg.id}
+                style={{
+                  display: "flex",
+                  justifyContent: msg.direction === "outgoing" ? "flex-end" : "flex-start",
+                  marginBottom: 10,
+                }}
+              >
+                <div
+                  style={{
+                    background: msg.direction === "outgoing" ? colors.red : colors.msgIn,
+                    color: msg.direction === "outgoing" ? "#fff" : colors.text,
+                    borderRadius: 16,
+                    padding: "8px 16px",
+                    maxWidth: "72%",
+                    fontSize: 15,
+                    boxShadow: "0 1px 4px #0001",
+                  }}
+                  title={new Date(msg.timestamp).toLocaleString()}
+                >
+                  {renderMessageBody(msg)}
+                </div>
+              </div>
+            ))
+          )
+        )}
+        <div ref={messagesEndRef}></div>
       </div>
-
-      {/* input bar (fixed height) */}
-      <div style={{
-        flexShrink: 0,
-        display: "flex",
-        gap: 8,
-        padding: 16,
-        borderTop: `1px solid ${colors.border}`,
-        height: 60,
-        boxSizing: "border-box"
-      }}>
+      {/* Reply form */}
+      <form onSubmit={sendReply} style={{ display: "flex", gap: 10, background: colors.card, padding: 16, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
         <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Type a message..."
           style={{
             flex: 1,
-            padding: 10,
-            borderRadius: 8,
-            border: `1px solid ${colors.border}`
+            borderRadius: 12,
+            border: `1px solid ${colors.border}`,
+            padding: "8px 14px",
+            fontSize: 15,
+            outline: "none",
+            background: colors.input,
+            color: colors.inputText
           }}
+          placeholder="Type your reply…"
+          value={reply}
+          disabled={sending}
+          onChange={e => setReply(e.target.value)}
         />
         <button
-          onClick={send}
+          type="submit"
+          disabled={sending || !reply.trim()}
           style={{
             background: colors.red,
             color: "#fff",
             border: "none",
-            borderRadius: 8,
-            padding: "0 16px",
-            cursor: "pointer"
+            borderRadius: 12,
+            fontWeight: 600,
+            fontSize: 15,
+            padding: "8px 26px",
+            cursor: sending ? "default" : "pointer",
+            opacity: sending ? 0.7 : 1
           }}
         >
           Send
         </button>
-      </div>
+      </form>
     </div>
   );
 }
