@@ -14,7 +14,7 @@ import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import "./App.css";
 
-// Use this for correct, human-readable section titles
+// Section display names for possible future use
 const SECTION_TITLES: Record<string, string> = {
   unlinked: "Unlinked Clients",
   allchats: "All Chats",
@@ -75,43 +75,6 @@ export default function App() {
     return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
 
-  const topBar = (
-    <div
-      style={{
-        width: "100%",
-        padding: "14px 30px 12px 205px",
-        background: c.card,
-        borderBottom: `2px solid ${c.red}`,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "sticky", top: 0, zIndex: 15,
-      }}
-    >
-      <span style={{ fontWeight: 700, fontSize: 24, color: c.red }}>
-        {SECTION_TITLES[section] || section}
-      </span>
-      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-        <span style={{ color: c.sub, fontSize: 16, marginRight: 10 }}>
-          {user.username} ({user.role})
-        </span>
-        <button
-          onClick={handleLogout}
-          style={{
-            background: c.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "7px 16px",
-            fontWeight: "bold",
-            fontSize: 15,
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
       <Sidebar
@@ -123,6 +86,7 @@ export default function App() {
         setSearch={setSearch}
         onDarkMode={() => setDarkMode((d) => !d)}
         user={user}
+        onLogout={handleLogout}
       />
       <div
         style={{
@@ -133,6 +97,22 @@ export default function App() {
           background: c.bg,
         }}
       >
+        <div
+          style={{
+            flex: 1,
+            width: "100%",
+            maxWidth: 1100,
+            minHeight: 420,
+            background: c.card,
+            borderRadius: 16,
+            boxShadow: "0 2px 14px #0001",
+            padding: "0 0 26px 0",
+            color: c.text,
+            display: "flex",
+            flexDirection: "column",
+            margin: "24px auto 40px auto",
+          }}
+        >
           {section === "unlinked" && <UnlinkedClientsPage colors={c} darkMode={darkMode} />}
           {section === "allchats" && <AllChatsPage colors={c} darkMode={darkMode} />}
           {section === "support" && <SupportPage colors={c} darkMode={darkMode} />}
