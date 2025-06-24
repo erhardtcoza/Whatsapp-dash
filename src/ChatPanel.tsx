@@ -39,8 +39,8 @@ export default function ChatPanel({ phone, contact, colors }: any) {
   }
 
   function renderMessageBody(msg: any) {
-    // Render any image with media_url
-    if (msg.media_url) {
+    // 1. IMAGE
+    if (msg.media_url && /\.(jpe?g|png|gif|webp)$/i.test(msg.media_url)) {
       return (
         <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
           <img
@@ -52,7 +52,30 @@ export default function ChatPanel({ phone, contact, colors }: any) {
         </a>
       );
     }
-    // Location support
+
+    // 2. AUDIO/VOICE NOTE
+    if (msg.media_url && /\.(mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url)) {
+      // Voice note rejection
+      if (
+        msg.body?.toLowerCase().includes("voice") ||
+        msg.body?.toLowerCase().includes("[audio]")
+      ) {
+        return (
+          <div style={{ color: "red", fontWeight: 600 }}>
+            Voice notes are not accepted. Sender was notified.
+          </div>
+        );
+      }
+      // If regular audio, offer play link
+      return (
+        <audio controls style={{ margin: "8px 0", width: 180 }}>
+          <source src={msg.media_url} />
+          Your browser does not support audio playback.
+        </audio>
+      );
+    }
+
+    // 3. LOCATION
     if (msg.location_json) {
       try {
         const loc = JSON.parse(msg.location_json);
@@ -74,7 +97,28 @@ export default function ChatPanel({ phone, contact, colors }: any) {
         return "[Invalid location data]";
       }
     }
-    // Default: show body text
+
+    // 4. DOCUMENTS/OTHER FILES
+    if (
+      msg.media_url && (
+        /\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar)$/i.test(msg.media_url) ||
+        !/\.(jpe?g|png|gif|webp|mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url) // unknown file type
+      )
+    ) {
+      const filename = msg.media_url.split("/").pop()?.split("?")[0] || "Download";
+      return (
+        <a
+          href={msg.media_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: colors.red, fontWeight: 600, textDecoration: "underline" }}
+        >
+          📎 {filename}
+        </a>
+      );
+    }
+
+    // 5. FALLBACK: BODY
     return msg.body;
   }
 
