@@ -107,6 +107,7 @@ export default function App() {
         search={search}
         setSearch={setSearch}
         onDarkMode={() => setDarkMode((d) => !d)}
+        user={user}
       />
       <div style={{
         flex: 1,
@@ -114,7 +115,7 @@ export default function App() {
         flexDirection: "column",
         minHeight: "100vh",
         background: c.bg,
-        marginLeft: 190, // Sidebar width
+        marginLeft: 190,
       }}>
         {topBar}
         <div
@@ -143,7 +144,12 @@ export default function App() {
           {section === "autoresp" && <AutoResponsePage colors={c} darkMode={darkMode} />}
           {section === "office" && <OfficeHoursPage colors={c} darkMode={darkMode} />}
           {section === "system" && <SystemPage colors={c} darkMode={darkMode} />}
-          {section === "adduser" && <AddUserPage colors={c} />}
+          {section === "adduser" && user.role === "admin" && <AddUserPage colors={c} />}
+          {section === "adduser" && user.role !== "admin" && (
+            <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
+              You do not have access to this section.
+            </div>
+          )}
         </div>
       </div>
     </div>
