@@ -1,240 +1,176 @@
-import { useEffect, useRef, useState } from "react";
-import { API_BASE } from "./config";
+import { useEffect, useState } from 'react';
+import { API_BASE }           from './config';
 
-export default function ChatPanel({ phone, contact, colors, onCloseChat }: any) {
-  const [messages, setMessages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [reply, setReply] = useState("");
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+export default function ChatPanel({
+  phone,
+  contact,
+  colors,
+  onCloseChat,
+}: any) {
+  const [msgs, setMsgs]       = useState<any[]>([]);
+  const [input, setInput]     = useState('');
+  const [editing, setEditing] = useState(!contact?.customer_id);
+  const [form, setForm]       = useState({
+    customer_id: contact?.customer_id || '',
+    first_name: '',
+    last_name: '',
+  });
 
   useEffect(() => {
-    if (!phone) return;
-    setLoading(true);
-    fetch(`${API_BASE}/api/messages?phone=${phone}`)
-      .then(res => res.json())
-      .then(setMessages)
-      .finally(() => setLoading(false));
+    if (phone) fetchMsgs();
   }, [phone]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  async function fetchMsgs() {
+    const res = await fetch(`${API_BASE}/api/messages?phone=${phone}`);
+    const data = await res.json();
+    setMsgs(data);
+  }
 
-  async function sendReply(e: any) {
+  async function handleSend(e: any) {
     e.preventDefault();
-    if (!reply.trim()) return;
-    setSending(true);
+    if (!input) return;
     await fetch(`${API_BASE}/api/send-message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, body: reply })
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ phone, body: input }),
     });
-    setReply("");
-    fetch(`${API_BASE}/api/messages?phone=${phone}`)
-      .then(res => res.json())
-      .then(setMessages)
-      .finally(() => setSending(false));
+    setInput('');
+    fetchMsgs();
   }
 
-  // Format display name
-  let displayName = phone;
-  if (contact?.customer_id && contact?.name) {
-    displayName = `[${contact.customer_id}] ${contact.name}`;
-  } else if (contact?.name) {
-    displayName = contact.name;
-  } else if (contact?.email) {
-    displayName = contact.email;
+  async function handleSaveClient() {
+    await fetch(`${API_BASE}/api/update-customer`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ phone, ...form }),
+    });
+    setEditing(false);
+    // trigger sidebar/chatlist refresh if needed
   }
-
-  function renderMessageBody(msg: any) {
-    // 1. IMAGE
-    if (msg.media_url && /\.(jpe?g|png|gif|webp)$/i.test(msg.media_url)) {
-      return (
-        <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
-          <img
-            src={msg.media_url}
-            alt="WhatsApp Media"
-            style={{ maxWidth: 180, maxHeight: 180, borderRadius: 12, margin: "4px 0" }}
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        </a>
-      );
-    }
-
-    // 2. AUDIO/VOICE NOTE
-    if (msg.media_url && /\.(mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url)) {
-      if (
-        msg.body?.toLowerCase().includes("voice") ||
-        msg.body?.toLowerCase().includes("[audio]")
-      ) {
-        return (
-          <div style={{ color: "red", fontWeight: 600 }}>
-            Voice notes are not accepted. Sender was notified.
-          </div>
-        );
-      }
-      return (
-        <audio controls style={{ margin: "8px 0", width: 180 }}>
-          <source src={msg.media_url} />
-          Your browser does not support audio playback.
-        </audio>
-      );
-    }
-
-    // 3. LOCATION
-    if (msg.location_json) {
-      try {
-        const loc = JSON.parse(msg.location_json);
-        const mapsUrl = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`;
-        return (
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: colors.red, textDecoration: "underline", fontWeight: 600 }}
-          >
-            📍 View Location<br />
-            <span style={{ fontSize: 13, color: colors.text }}>
-              ({loc.latitude}, {loc.longitude})
-            </span>
-          </a>
-        );
-      } catch {
-        return "[Invalid location data]";
-      }
-    }
-
-    // 4. DOCUMENTS/OTHER FILES
-    if (
-      msg.media_url && (
-        /\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar)$/i.test(msg.media_url) ||
-        !/\.(jpe?g|png|gif|webp|mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url) // unknown file type
-      )
-    ) {
-      const filename = msg.media_url.split("/").pop()?.split("?")[0] || "Download";
-      return (
-        <a
-          href={msg.media_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: colors.red, fontWeight: 600, textDecoration: "underline" }}
-        >
-          📎 {filename}
-        </a>
-      );
-    }
-
-    // 5. FALLBACK: BODY
-    return msg.body;
-  }
-
-  if (!phone) return (
-    <div style={{ color: colors.sub, padding: 40, textAlign: "center" }}>
-      Select a chat to view conversation.
-    </div>
-  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: 380, background: colors.bg, borderRadius: 12, marginTop: 28 }}>
-      {/* Header */}
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      height: '100%', background: colors.card
+    }}>
+      {/* Header: manual client form or display */}
       <div style={{
-        background: colors.card,
-        padding: 16,
-        fontWeight: 600,
-        color: colors.red,
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between"
+        padding: 16, borderBottom: `1px solid ${colors.border}`
       }}>
-        <span>{displayName}</span>
+        <strong>Chat: {phone}</strong>
+        {editing ? (
+          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+            <input
+              placeholder="Customer ID"
+              value={form.customer_id}
+              onChange={e => setForm({...form,customer_id:e.target.value})}
+              style={{ flex:1, padding:8, borderRadius:4, border:`1px solid ${colors.border}` }}
+            />
+            <input
+              placeholder="First name"
+              value={form.first_name}
+              onChange={e => setForm({...form,first_name:e.target.value})}
+              style={{ flex:1, padding:8, borderRadius:4, border:`1px solid ${colors.border}` }}
+            />
+            <input
+              placeholder="Last name"
+              value={form.last_name}
+              onChange={e => setForm({...form,last_name:e.target.value})}
+              style={{ flex:1, padding:8, borderRadius:4, border:`1px solid ${colors.border}` }}
+            />
+            <button
+              onClick={handleSaveClient}
+              style={{
+                background: colors.red,
+                color: '#fff',
+                border:'none',
+                borderRadius:4,
+                padding:'8px 12px',
+                cursor:'pointer'
+              }}
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          <div style={{ marginTop:12 }}>
+            <span style={{ marginRight: 16 }}>
+              ID: {contact.customer_id}
+            </span>
+            <span>
+              Name: {contact.name}
+            </span>
+          </div>
+        )}
+
         <button
           onClick={onCloseChat}
           style={{
-            background: colors.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "5px 18px",
-            fontWeight: 700,
-            fontSize: 15,
-            marginLeft: 14,
-            cursor: "pointer",
+            float: 'right',
+            background: 'transparent',
+            border:'none',
+            color: colors.red,
+            cursor: 'pointer'
           }}
         >
           Close Chat
         </button>
       </div>
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 10px 18px", background: colors.bg }}>
-        {loading ? (
-          <div style={{ color: colors.sub, textAlign: "center" }}>Loading…</div>
-        ) : (
-          messages.length === 0 ? (
-            <div style={{ color: colors.sub, textAlign: "center", marginTop: 40 }}>No messages</div>
-          ) : (
-            messages.map((msg: any) => (
-              <div
-                key={msg.id}
-                style={{
-                  display: "flex",
-                  justifyContent: msg.direction === "outgoing" ? "flex-end" : "flex-start",
-                  marginBottom: 10,
-                }}
-              >
-                <div
-                  style={{
-                    background: msg.direction === "outgoing" ? colors.red : colors.msgIn,
-                    color: msg.direction === "outgoing" ? "#fff" : colors.text,
-                    borderRadius: 16,
-                    padding: "8px 16px",
-                    maxWidth: "72%",
-                    fontSize: 15,
-                    boxShadow: "0 1px 4px #0001",
-                  }}
-                  title={new Date(msg.timestamp).toLocaleString()}
-                >
-                  {renderMessageBody(msg)}
-                </div>
-              </div>
-            ))
-          )
-        )}
-        <div ref={messagesEndRef}></div>
+
+      {/* Message list */}
+      <div style={{
+        flex:1,
+        overflowY:'auto',
+        padding:16,
+        background: colors.bg
+      }}>
+        {msgs.map(m => (
+          <div key={m.id}
+               style={{
+                 marginBottom:12,
+                 textAlign: m.direction==='outgoing' ? 'right':'left'
+               }}>
+            <div style={{
+              display:'inline-block',
+              padding:'8px 12px',
+              borderRadius:12,
+              background: m.direction==='outgoing'
+                ? colors.msgOut
+                : colors.msgIn,
+              color: m.direction==='outgoing' ? '#fff':colors.text
+            }}>
+              {m.body}
+            </div>
+          </div>
+        ))}
       </div>
-      {/* Reply form */}
-      <form onSubmit={sendReply} style={{ display: "flex", gap: 10, background: colors.card, padding: 16, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
+
+      {/* Input form */}
+      <form onSubmit={handleSend} style={{
+        padding:16,
+        borderTop:`1px solid ${colors.border}`,
+        display:'flex', gap:8
+      }}>
         <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Type a message…"
           style={{
-            flex: 1,
-            borderRadius: 12,
-            border: `1px solid ${colors.border}`,
-            padding: "8px 14px",
-            fontSize: 15,
-            outline: "none",
-            background: colors.input,
-            color: colors.inputText
+            flex:1,
+            padding:10,
+            borderRadius:8,
+            border:`1px solid ${colors.border}`
           }}
-          placeholder="Type your reply…"
-          value={reply}
-          disabled={sending}
-          onChange={e => setReply(e.target.value)}
         />
         <button
           type="submit"
-          disabled={sending || !reply.trim()}
           style={{
             background: colors.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 12,
-            fontWeight: 600,
-            fontSize: 15,
-            padding: "8px 26px",
-            cursor: sending ? "default" : "pointer",
-            opacity: sending ? 0.7 : 1
+            color: '#fff',
+            border:'none',
+            borderRadius:8,
+            padding:'0 16px',
+            cursor:'pointer'
           }}
         >
           Send
