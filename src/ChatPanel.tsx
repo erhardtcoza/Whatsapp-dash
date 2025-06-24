@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "./config";
 
-export default function ChatPanel({ phone, contact, colors }: any) {
+export default function ChatPanel({ phone, contact, colors, onCloseChat }: any) {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [reply, setReply] = useState("");
@@ -31,11 +31,20 @@ export default function ChatPanel({ phone, contact, colors }: any) {
       body: JSON.stringify({ phone, body: reply })
     });
     setReply("");
-    // Reload messages
     fetch(`${API_BASE}/api/messages?phone=${phone}`)
       .then(res => res.json())
       .then(setMessages)
       .finally(() => setSending(false));
+  }
+
+  // Format display name
+  let displayName = phone;
+  if (contact?.customer_id && contact?.name) {
+    displayName = `[${contact.customer_id}] ${contact.name}`;
+  } else if (contact?.name) {
+    displayName = contact.name;
+  } else if (contact?.email) {
+    displayName = contact.email;
   }
 
   function renderMessageBody(msg: any) {
@@ -55,7 +64,6 @@ export default function ChatPanel({ phone, contact, colors }: any) {
 
     // 2. AUDIO/VOICE NOTE
     if (msg.media_url && /\.(mp3|ogg|wav|m4a|aac)$/i.test(msg.media_url)) {
-      // Voice note rejection
       if (
         msg.body?.toLowerCase().includes("voice") ||
         msg.body?.toLowerCase().includes("[audio]")
@@ -66,7 +74,6 @@ export default function ChatPanel({ phone, contact, colors }: any) {
           </div>
         );
       }
-      // If regular audio, offer play link
       return (
         <audio controls style={{ margin: "8px 0", width: 180 }}>
           <source src={msg.media_url} />
@@ -131,8 +138,34 @@ export default function ChatPanel({ phone, contact, colors }: any) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: 380, background: colors.bg, borderRadius: 12, marginTop: 28 }}>
       {/* Header */}
-      <div style={{ background: colors.card, padding: 16, fontWeight: 600, color: colors.red, borderTopLeftRadius: 12, borderTopRightRadius: 12 }}>
-        {contact?.name || contact?.email || phone}
+      <div style={{
+        background: colors.card,
+        padding: 16,
+        fontWeight: 600,
+        color: colors.red,
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between"
+      }}>
+        <span>{displayName}</span>
+        <button
+          onClick={onCloseChat}
+          style={{
+            background: colors.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "5px 18px",
+            fontWeight: 700,
+            fontSize: 15,
+            marginLeft: 14,
+            cursor: "pointer",
+          }}
+        >
+          Close Chat
+        </button>
       </div>
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "18px 18px 10px 18px", background: colors.bg }}>
