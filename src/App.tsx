@@ -25,11 +25,13 @@ const SECTION_TITLES: Record<string, string> = {
   autoresp: "Auto Response",
   office: "Office Hours Management",
   system: "System",
-  adduser: "Add User"
+  adduser: "Add User",
 };
 
 export default function App() {
-  useEffect(() => { document.title = "Vinet WhatsApp Portal"; }, []);
+  useEffect(() => {
+    document.title = "Vinet WhatsApp Portal";
+  }, []);
 
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
 
@@ -38,7 +40,7 @@ export default function App() {
     localStorage.setItem("wa-dark", darkMode ? "1" : "0");
   }, [darkMode]);
 
-  const [user, setUser] = useState<{ username: string, role: string } | null>(() => {
+  const [user, setUser] = useState<{ username: string; role: string } | null>(() => {
     const u = localStorage.getItem("wa-user");
     return u ? JSON.parse(u) : null;
   });
@@ -48,20 +50,44 @@ export default function App() {
 
   const c = darkMode
     ? {
-        bg: "#1a1d22", card: "#23262b", border: "#23262b",
-        text: "#f6f7fa", sub: "#bfc1c7", red: "#e2001a",
-        sidebar: "#23262b", sidebarSel: "#e2001a", sidebarTxt: "#fff",
-        input: "#262931", inputText: "#fff", th: "#ccd0da", td: "#eee",
-        badge: "#e2001a", tag: "#555", tagTxt: "#fff",
-        msgIn: "#262931", msgOut: "#e2001a",
+        bg: "#1a1d22",
+        card: "#23262b",
+        border: "#23262b",
+        text: "#f6f7fa",
+        sub: "#bfc1c7",
+        red: "#e2001a",
+        sidebar: "#23262b",
+        sidebarSel: "#e2001a",
+        sidebarTxt: "#fff",
+        input: "#262931",
+        inputText: "#fff",
+        th: "#ccd0da",
+        td: "#eee",
+        badge: "#e2001a",
+        tag: "#555",
+        tagTxt: "#fff",
+        msgIn: "#262931",
+        msgOut: "#e2001a",
       }
     : {
-        bg: "#f7f7fa", card: "#fff", border: "#eaeaea",
-        text: "#23262b", sub: "#555", red: "#e2001a",
-        sidebar: "#f7f7fa", sidebarSel: "#e2001a", sidebarTxt: "#23262b",
-        input: "#fff", inputText: "#23262b", th: "#555", td: "#223",
-        badge: "#e2001a", tag: "#888", tagTxt: "#fff",
-        msgIn: "#fff", msgOut: "#e2001a",
+        bg: "#f7f7fa",
+        card: "#fff",
+        border: "#eaeaea",
+        text: "#23262b",
+        sub: "#555",
+        red: "#e2001a",
+        sidebar: "#f7f7fa",
+        sidebarSel: "#e2001a",
+        sidebarTxt: "#23262b",
+        input: "#fff",
+        inputText: "#23262b",
+        th: "#555",
+        td: "#223",
+        badge: "#e2001a",
+        tag: "#888",
+        tagTxt: "#fff",
+        msgIn: "#fff",
+        msgOut: "#e2001a",
       };
 
   function handleLoginSuccess(userObj: any) {
@@ -75,6 +101,8 @@ export default function App() {
   }
 
   if (!user) return <Login onLogin={handleLoginSuccess} colors={c} />;
+
+  const isAdmin = user.role === "admin";
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
@@ -90,32 +118,37 @@ export default function App() {
         onLogout={handleLogout}
       />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", background: c.bg }}>
-        <div style={{
-          flex: 1,
-          width: "100%",
-          maxWidth: 1100,
-          minHeight: 420,
-          background: c.card,
-          borderRadius: 16,
-          boxShadow: "0 2px 14px #0001",
-          padding: "0 0 26px 0",
-          color: c.text,
-          display: "flex",
-          flexDirection: "column",
-          margin: "24px auto 40px auto",
-        }}>
-          <div style={{
-            fontWeight: 700,
-            fontSize: 26,
+        <div
+          style={{
+            flex: 1,
+            width: "100%",
+            maxWidth: 1100,
+            minHeight: 420,
+            background: c.card,
+            borderRadius: 16,
+            boxShadow: "0 2px 14px #0001",
+            padding: "0 0 26px 0",
             color: c.text,
-            padding: "28px 40px 14px 40px",
-            borderBottom: `1.5px solid ${c.border}`,
-            marginBottom: 6,
-            letterSpacing: 0.1,
-            textAlign: "left"
-          }}>
+            display: "flex",
+            flexDirection: "column",
+            margin: "24px auto 40px auto",
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 26,
+              color: c.text,
+              padding: "28px 40px 14px 40px",
+              borderBottom: `1.5px solid ${c.border}`,
+              marginBottom: 6,
+              letterSpacing: 0.1,
+              textAlign: "left",
+            }}
+          >
             {SECTION_TITLES[section] || "Dashboard"}
           </div>
+
           <div style={{ padding: "0 40px", flex: 1 }}>
             {{
               unlinked: <UnlinkedClientsPage colors={c} darkMode={darkMode} />,
@@ -125,14 +158,16 @@ export default function App() {
               sales: <SalesPage colors={c} darkMode={darkMode} />,
               leads: <LeadsPage colors={c} darkMode={darkMode} />,
               broadcast: <BroadcastPage colors={c} darkMode={darkMode} />,
-              autoresp: <AutoResponsePage colors={c} />,
-              office: <OfficeHoursPage colors={c} />,
+              autoresp: <AutoResponsePage colors={c} darkMode={darkMode} />,
+              office: <OfficeHoursPage colors={c} darkMode={darkMode} />,
               system: <SystemPage colors={c} darkMode={darkMode} />,
-              adduser: user.role === "admin"
-                ? <AddUserPage colors={c} />
-                : <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
-                    You do not have access to this section.
-                  </div>,
+              adduser: isAdmin ? (
+                <AddUserPage colors={c} />
+              ) : (
+                <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
+                  You do not have access to this section.
+                </div>
+              ),
             }[section] || (
               <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
                 Invalid section
