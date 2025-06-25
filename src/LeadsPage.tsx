@@ -2,233 +2,247 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-interface Message { /* same as above */ }
-interface ChatSummary { /* same as above */ }
+interface ChatSummary {
+  from_number: string;
+  name: string;
+  email: string;
+  customer_id: string;
+  last_ts: number;
+  last_message: string;
+  unread_count?: number;
+  tag?: string;
+}
+
+interface Message {
+  id: number;
+  from_number: string;
+  body: string;
+  tag: string;
+  timestamp: number;
+  direction: "incoming" | "outgoing";
+  media_url?: string | null;
+  location_json?: string | null;
+  seen?: number;
+}
 
 export default function LeadsPage({ colors }: any) {
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [selected, setSelected] = useState<ChatSummary | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [sending, setSending] = useState(false);
-
-  useEffect(() => { fetchLeadsChats(); }, []);
-  async function fetchLeadsChats() {
-    setLoadingChats(true);
-    const res = await fetch(`${API_BASE}/api/leads-chats`);
-    setChats(await res.json());
-    setLoadingChats(false);
-  }
 
   useEffect(() => {
-    if (selected) loadMessages(selected.from_number);
-  }, [selected]);
-  async function loadMessages(phone: string) {
+    fetch(`${API_BASE}/api/leads-chats`)
+      .then((r) => r.json())
+      .then((d: ChatSummary[]) => {
+        setChats(d);
+        setLoadingChats(false);
+      });
+  }, []);
+
+  async function openChat(chat: ChatSummary) {
+    setSelected(chat);
     setLoadingMsgs(true);
-    const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
-    setMessages(await res.json());
+    const res = await fetch(
+      `${API_BASE}/api/messages?phone=${encodeURIComponent(chat.from_number)}`
+    );
+    const msgs: Message[] = await res.json();
+    setMessages(msgs);
     setLoadingMsgs(false);
   }
 
-  async function sendMessage() {
-    if (!selected || !input.trim()) return;
-    setSending(true);
-    await fetch(`${API_BASE}/api/send-message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selected.from_number, body: input.trim() }),
-    });
-    setInput("");
-    await loadMessages(selected.from_number);
-    setSending(false);
-  }
-
-  async function closeChat() {
-    if (!selected) return;
-    await fetch(`${API_BASE}/api/close-chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selected.from_number }),
-    });
-    setSelected(null);
-    fetchLeadsChats();
-  }
-
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      {/* Sidebar */}
-      <div style={{
-        width: 280,
-        borderRight: `1px solid ${colors.border}`,
-        padding: 16,
-        overflowY: "auto",
-        background: colors.sidebar
-      }}>
-        <h3 style={{ margin: "0 0 12px", color: colors.text }}>Leads</h3>
-        {loadingChats
-          ? <div style={{ color: colors.sub }}>Loading…</div>
-          : chats.length === 0
-            ? <div style={{ color: colors.sub }}>No open lead chats</div>
-            : chats.map(c => (
+    <div style={{ padding: 32 }}>
+      <h2 style={{ color: colors.text, marginBottom: 18 }}>Leads</h2>
+      <div style={{ display: "flex", gap: 24 }}>
+        {/* Chat list */}
+        <div
+          style={{
+            width: 280,
+            background: colors.card,
+            borderRadius: 8,
+            overflow: "auto",
+            maxHeight: 600,
+          }}
+        >
+          {loadingChats ? (
+            <div style={{ padding: 16, color: colors.sub }}>Loading…</div>
+          ) : chats.length === 0 ? (
+            <div style={{ padding: 16, color: colors.sub }}>
+              No open lead chats
+            </div>
+          ) : (
+            chats.map((chat) => (
+              <div
+                key={chat.from_number}
+                onClick={() => openChat(chat)}
+                style={{
+                  padding: 12,
+                  borderBottom: `1px solid ${colors.border}`,
+                  cursor: "pointer",
+                  background:
+                    selected?.from_number === chat.from_number
+                      ? colors.sidebarSel
+                      : "none",
+                  color:
+                    selected?.from_number === chat.from_number
+                      ? "#fff"
+                      : colors.text,
+                }}
+              >
+                <div>
+                  <strong>{chat.name || chat.from_number}</strong>
+                </div>
+                <div style={{ fontSize: 12, color: colors.sub }}>
+                  {chat.last_message}
+                </div>
+                {chat.unread_count ? (
+                  <span
+                    style={{
+                      background: colors.red,
+                      color: "#fff",
+                      borderRadius: 8,
+                      padding: "2px 6px",
+                      fontSize: 12,
+                      float: "right",
+                    }}
+                  >
+                    {chat.unread_count}
+                  </span>
+                ) : null}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Chat window */}
+        <div
+          style={{
+            flex: 1,
+            background: colors.card,
+            borderRadius: 8,
+            padding: 16,
+            position: "relative",
+          }}
+        >
+          {selected ? (
+            loadingMsgs ? (
+              <div style={{ color: colors.sub }}>Loading messages…</div>
+            ) : (
+              <>
+                <div style={{ marginBottom: 12, fontWeight: 600 }}>
+                  Chat with {selected.name || selected.from_number}
+                  <button
+                    onClick={() => setSelected(null)}
+                    style={{
+                      float: "right",
+                      background: "none",
+                      border: "none",
+                      fontSize: 18,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+
                 <div
-                  key={c.from_number}
-                  onClick={() => setSelected(c)}
                   style={{
-                    padding: "8px 12px",
-                    marginBottom: 8,
-                    background: selected?.from_number === c.from_number ? colors.red : colors.card,
-                    color: selected?.from_number === c.from_number ? "#fff" : colors.text,
-                    borderRadius: 6,
-                    cursor: "pointer",
+                    maxHeight: 400,
+                    overflow: "auto",
+                    marginBottom: 12,
                   }}
                 >
-                  <div style={{ fontWeight: 600 }}>{c.name || c.from_number}</div>
-                  <div style={{ fontSize: 12, color: colors.sub, marginTop: 2 }}>
-                    {c.last_message}
-                  </div>
-                </div>
-              ))
-        }
-      </div>
-
-      {/* Chat window */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {selected ? (
-          <>
-            {/* header */}
-            <div style={{
-              padding: "12px 16px",
-              borderBottom: `1px solid ${colors.border}`,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <strong>{selected.name || selected.from_number}</strong><br/>
-                <small style={{ color: colors.sub }}>{selected.email}</small>
-              </div>
-              <div>
-                <button
-                  onClick={() => setSelected(null)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 18,
-                    cursor: "pointer",
-                    marginRight: 12,
-                    color: colors.sub
-                  }}
-                >✕</button>
-                <button
-                  onClick={closeChat}
-                  style={{
-                    background: colors.red,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "6px 12px",
-                    cursor: "pointer"
-                  }}
-                >Close Session</button>
-              </div>
-            </div>
-
-            {/* messages */}
-            <div style={{
-              flex: 1,
-              padding: 16,
-              overflowY: "auto",
-              background: colors.bg
-            }}>
-              {loadingMsgs
-                ? <div style={{ color: colors.sub }}>Loading messages…</div>
-                : messages.length === 0
-                  ? <div style={{ color: colors.sub }}>No messages yet</div>
-                  : messages.map(msg => (
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      style={{
+                        display: "flex",
+                        justifyContent:
+                          msg.direction === "outgoing"
+                            ? "flex-end"
+                            : "flex-start",
+                        marginBottom: 8,
+                      }}
+                    >
                       <div
-                        key={msg.id}
                         style={{
-                          marginBottom: 12,
-                          textAlign: msg.direction === "outgoing" ? "right" : "left"
-                        }}
-                      >
-                        <div style={{
-                          display: "inline-block",
-                          background: msg.direction === "outgoing" ? colors.msgOut : colors.card,
-                          color: msg.direction === "outgoing" ? "#fff" : colors.text,
+                          background:
+                            msg.direction === "outgoing"
+                              ? colors.msgOut
+                              : colors.msgIn,
+                          color:
+                            msg.direction === "outgoing"
+                              ? "#fff"
+                              : colors.text,
                           padding: "8px 12px",
                           borderRadius: 8,
                           maxWidth: "70%",
-                          wordBreak: "break-word"
-                        }}>
-                          {msg.body}
-                          {msg.media_url && (
-                            <div style={{ marginTop: 6 }}>
-                              <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
-                                [View Media]
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 10, color: colors.sub, marginTop: 2 }}>
-                          {new Date(msg.timestamp).toLocaleTimeString()}
-                        </div>
+                        }}
+                      >
+                        {msg.body}
+                        {msg.media_url && (
+                          <div style={{ marginTop: 6 }}>
+                            <a href={msg.media_url} target="_blank">
+                              📎 Media
+                            </a>
+                          </div>
+                        )}
                       </div>
-                    ))
-              }
-            </div>
+                    </div>
+                  ))}
+                </div>
 
-            {/* composer */}
-            <div style={{
-              padding: 16,
-              borderTop: `1px solid ${colors.border}`,
-              display: "flex",
-              gap: 8,
-            }}>
-              <input
-                type="text"
-                value={input}
-                placeholder="Type your message…"
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && sendMessage()}
-                style={{
-                  flex: 1,
-                  borderRadius: 6,
-                  border: `1px solid ${colors.border}`,
-                  padding: "8px 12px",
-                  fontSize: 14,
-                  background: colors.input,
-                  color: colors.inputText
-                }}
-                disabled={sending}
-              />
-              <button
-                onClick={sendMessage}
-                style={{
-                  background: colors.red,
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "8px 16px",
-                  cursor: "pointer"
-                }}
-                disabled={sending}
-              >Send</button>
-            </div>
-          </>
-        ) : (
-          <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: colors.sub
-          }}>
-            Select a chat from the left to open it.
-          </div>
-        )}
+                {/* Reply form */}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const input = (e.target as any).elements.reply.value.trim();
+                    if (!input) return;
+                    await fetch(`${API_BASE}/api/send-message`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        phone: selected.from_number,
+                        body: input,
+                      }),
+                    });
+                    openChat(selected);
+                    (e.target as any).reset();
+                  }}
+                >
+                  <input
+                    name="reply"
+                    placeholder="Type a message…"
+                    style={{
+                      width: "calc(100% - 100px)",
+                      padding: "8px 12px",
+                      borderRadius: 6,
+                      border: `1px solid ${colors.border}`,
+                      marginRight: 8,
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      background: colors.red,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Send
+                  </button>
+                </form>
+              </>
+            )
+          ) : (
+            <div style={{ color: colors.sub }}>Select a chat to open</div>
+          )}
+        </div>
       </div>
     </div>
   );
