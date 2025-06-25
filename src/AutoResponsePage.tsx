@@ -10,20 +10,13 @@ export default function AutoResponsePage({ colors }: any) {
   const TAGS = ["support", "sales", "accounts", "leads"];
 
   useEffect(() => {
-    loadReplies();
+    fetch(`${API_BASE}/api/auto-replies`)
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      });
   }, []);
-
-  async function loadReplies() {
-    setLoading(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/auto-replies`);
-      const d = await r.json();
-      setData(d);
-    } catch (err) {
-      console.error("Failed to load replies", err);
-    }
-    setLoading(false);
-  }
 
   function handleChange(field: string, value: string) {
     setForm({ ...form, [field]: value });
@@ -36,19 +29,11 @@ export default function AutoResponsePage({ colors }: any) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    await loadReplies();
+    const res = await fetch(`${API_BASE}/api/auto-replies`);
+    const updated = await res.json();
+    setData(updated);
     setForm({ tag: "", hours: "", reply: "" });
     setEditingId(null);
-  }
-
-  async function remove(id: number) {
-    if (!confirm("Are you sure you want to delete this reply?")) return;
-    await fetch(`${API_BASE}/api/auto-reply-delete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    await loadReplies();
   }
 
   function edit(row: any) {
@@ -59,15 +44,6 @@ export default function AutoResponsePage({ colors }: any) {
   function cancelEdit() {
     setForm({ tag: "", hours: "", reply: "" });
     setEditingId(null);
-  }
-
-  function groupedByTag() {
-    const grouped: Record<string, any[]> = {};
-    for (let row of data) {
-      if (!grouped[row.tag]) grouped[row.tag] = [];
-      grouped[row.tag].push(row);
-    }
-    return grouped;
   }
 
   return (
@@ -158,63 +134,54 @@ export default function AutoResponsePage({ colors }: any) {
       {loading ? (
         <div style={{ color: colors.sub }}>Loading…</div>
       ) : (
-        Object.entries(groupedByTag()).map(([tag, rows]) => (
-          <div key={tag} style={{ marginBottom: 32 }}>
-            <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 10 }}>
-              {tag.toUpperCase()}
-            </h3>
-            <table style={{ width: "100%", background: colors.card, borderRadius: 8 }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: 8 }}>Hours</th>
-                  <th style={{ textAlign: "left", padding: 8 }}>Reply</th>
-                  <th style={{ width: 140 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td style={{ padding: 8 }}>{row.hours}</td>
-                    <td style={{ padding: 8 }}>{row.reply}</td>
-                    <td style={{ padding: 8 }}>
-                      <button
-                        onClick={() => edit(row)}
-                        style={{
-                          background: colors.red,
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "4px 10px",
-                          marginRight: 6,
-                          fontWeight: 600,
-                          fontSize: 14,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => remove(row.id)}
-                        style={{
-                          background: "#666",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "4px 10px",
-                          fontWeight: 600,
-                          fontSize: 14,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))
+        <>
+          {TAGS.map((tag) => {
+            const tagRows = data.filter((r) => r.tag === tag);
+            if (!tagRows.length) return null;
+
+            return (
+              <div key={tag} style={{ marginBottom: 32 }}>
+                <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 10 }}>
+                  {tag.toUpperCase()}
+                </h3>
+                <table style={{ width: "100%", background: colors.card, borderRadius: 8 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: 8 }}>Hours</th>
+                      <th style={{ textAlign: "left", padding: 8 }}>Reply</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tagRows.map((row) => (
+                      <tr key={row.id}>
+                        <td style={{ padding: 8 }}>{row.hours}</td>
+                        <td style={{ padding: 8 }}>{row.reply}</td>
+                        <td style={{ padding: 8 }}>
+                          <button
+                            onClick={() => edit(row)}
+                            style={{
+                              background: colors.red,
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 6,
+                              padding: "4px 10px",
+                              fontWeight: 600,
+                              fontSize: 14,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+        </>
       )}
     </div>
   );
