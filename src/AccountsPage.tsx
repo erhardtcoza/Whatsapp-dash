@@ -1,92 +1,274 @@
+// src/AccountsPage.tsx
+
 import { useEffect, useState } from "react";
+import { API_BASE } from "./config";
 
-export default function SupportPage({ colors }: any) {
-  const [chats, setChats] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface Message {
+  id: number;
+  from_number: string;
+  body: string;
+  direction: "incoming" | "outgoing";
+  timestamp: number;
+  media_url?: string;
+  location_json?: string;
+}
 
+interface ChatSummary {
+  from_number: string;
+  name: string;
+  email: string;
+  customer_id: string;
+  last_ts: number;
+  last_message: string;
+}
+
+export default function AccountsPage({ colors }: any) {
+  const [chats, setChats] = useState<ChatSummary[]>([]);
+  const [selected, setSelected] = useState<ChatSummary | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loadingChats, setLoadingChats] = useState(true);
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // 1) load open accounts chats
   useEffect(() => {
-    fetch("https://w-api.vinetdns.co.za/api/chats?department=accounts")
-      .then(res => {
-        if (!res.ok) throw new Error("Failed");
-        return res.json();
-      })
-      .then(data => { setChats(data); setLoading(false); })
-      .catch(() => { setError("Could not load chats"); setLoading(false); });
+    fetchAccountsChats();
   }, []);
 
+  async function fetchAccountsChats() {
+    setLoadingChats(true);
+    const res = await fetch(`${API_BASE}/api/accounts-chats`);
+    const data = await res.json();
+    setChats(data);
+    setLoadingChats(false);
+  }
+
+  // 2) when you select a chat, load its messages
+  useEffect(() => {
+    if (!selected) return;
+    loadMessages(selected.from_number);
+  }, [selected]);
+
+  async function loadMessages(phone: string) {
+    setLoadingMsgs(true);
+    const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
+    const msgs = await res.json();
+    setMessages(msgs);
+    setLoadingMsgs(false);
+  }
+
+  // 3) send a new message
+  async function sendMessage() {
+    if (!selected || !input.trim()) return;
+    setSending(true);
+    await fetch(`${API_BASE}/api/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: selected.from_number, body: input.trim() }),
+    });
+    setInput("");
+    await loadMessages(selected.from_number);
+    setSending(false);
+  }
+
+  // 4) close this chat session
+  async function closeChat() {
+    if (!selected) return;
+    await fetch(`${API_BASE}/api/close-chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: selected.from_number }),
+    });
+    // go back to list and refresh
+    setSelected(null);
+    fetchAccountsChats();
+  }
+
+  // --- layout ---
   return (
-    <div style={{ padding: "38px 36px", width: "100%" }}>
-      <h2 style={{ color: colors.red, fontWeight: 700, marginBottom: 20 }}>Support Chats</h2>
-      {error ? (
-        <div style={{ color: "red" }}>{error}</div>
-      ) : loading ? (
-        <div style={{ color: colors.text }}>Loading...</div>
-      ) : chats.length === 0 ? (
-        <div style={{ color: colors.sub }}>No open support chats.</div>
-      ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            background: colors.card,
-            color: colors.text,
-            borderRadius: 10,
-            boxShadow: "0 1px 7px #0001",
-            overflow: "hidden",
-          }}
-        >
-          <thead>
-            <tr style={{ background: colors.input }}>
-              <th style={th}>Name</th>
-              <th style={th}>Number</th>
-              <th style={th}>Email</th>
-              <th style={th}>Last Message</th>
-              <th style={th}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {chats.map((c) => (
-              <tr key={c.from_number}>
-                <td style={td}>{c.name || <span style={{ color: colors.sub }}>N/A</span>}</td>
-                <td style={td}>{c.from_number}</td>
-                <td style={td}>{c.email || <span style={{ color: colors.sub }}>N/A</span>}</td>
-                <td style={td}>{c.last_message || ""}</td>
-                <td style={td}>
-                  <button
+    <div style={{ display: "flex", height: "100%" }}>
+      {/* Chat list sidebar */}
+      <div style={{
+        width: 280,
+        borderRight: `1px solid ${colors.border}`,
+        padding: 16,
+        overflowY: "auto",
+        background: colors.sidebar
+      }}>
+        <h3 style={{ margin: "0 0 12px", color: colors.text }}>Accounts Chats</h3>
+        {loadingChats ? (
+          <div style={{ color: colors.sub }}>Loading…</div>
+        ) : chats.length === 0 ? (
+          <div style={{ color: colors.sub }}>No open accounts chats</div>
+        ) : (
+          chats.map(chat => (
+            <div
+              key={chat.from_number}
+              onClick={() => setSelected(chat)}
+              style={{
+                padding: "8px 12px",
+                marginBottom: 8,
+                background: selected?.from_number === chat.from_number
+                  ? colors.red : colors.card,
+                color: selected?.from_number === chat.from_number
+                  ? "#fff" : colors.text,
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>{chat.name || chat.from_number}</div>
+              <div style={{ fontSize: 12, color: colors.sub, marginTop: 2 }}>
+                {chat.last_message}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Chat window */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {selected ? (
+          <>
+            {/* header */}
+            <div style={{
+              padding: "12px 16px",
+              borderBottom: `1px solid ${colors.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <div>
+                <strong>{selected.name || selected.from_number}</strong><br/>
+                <small style={{ color: colors.sub }}>{selected.email}</small>
+              </div>
+              <div>
+                <button
+                  onClick={() => setSelected(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    marginRight: 12,
+                    color: colors.sub
+                  }}
+                >
+                  ✕
+                </button>
+                <button
+                  onClick={closeChat}
+                  style={{
+                    background: colors.red,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    cursor: "pointer"
+                  }}
+                >
+                  Close Session
+                </button>
+              </div>
+            </div>
+
+            {/* message list */}
+            <div style={{
+              flex: 1,
+              padding: 16,
+              overflowY: "auto",
+              background: colors.bg
+            }}>
+              {loadingMsgs ? (
+                <div style={{ color: colors.sub }}>Loading messages…</div>
+              ) : messages.length === 0 ? (
+                <div style={{ color: colors.sub }}>No messages yet</div>
+              ) : (
+                messages.map(msg => (
+                  <div
+                    key={msg.id}
                     style={{
-                      background: colors.red,
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 6,
-                      padding: "5px 14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontSize: 14,
+                      marginBottom: 12,
+                      textAlign: msg.direction === "outgoing" ? "right" : "left"
                     }}
-                    onClick={() => alert("Open chat/handle reply here")}
                   >
-                    Open
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                    <div style={{
+                      display: "inline-block",
+                      background: msg.direction === "outgoing"
+                        ? colors.msgOut : colors.card,
+                      color: msg.direction === "outgoing" ? "#fff" : colors.text,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      maxWidth: "70%",
+                      wordBreak: "break-word"
+                    }}>
+                      {msg.body}
+                      {msg.media_url && (
+                        <div style={{ marginTop: 6 }}>
+                          <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
+                            [View Media]
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10, color: colors.sub, marginTop: 2 }}>
+                      {new Date(msg.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* input box */}
+            <div style={{
+              padding: 16,
+              borderTop: `1px solid ${colors.border}`,
+              display: "flex",
+              gap: 8,
+            }}>
+              <input
+                type="text"
+                value={input}
+                placeholder="Type your message…"
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && sendMessage()}
+                style={{
+                  flex: 1,
+                  borderRadius: 6,
+                  border: `1px solid ${colors.border}`,
+                  padding: "8px 12px",
+                  fontSize: 14,
+                  background: colors.input,
+                  color: colors.inputText
+                }}
+                disabled={sending}
+              />
+              <button
+                onClick={sendMessage}
+                style={{
+                  background: colors.red,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 16px",
+                  cursor: "pointer"
+                }}
+                disabled={sending}
+              >Send</button>
+            </div>
+          </>
+        ) : (
+          <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: colors.sub
+          }}>
+            Select a chat from the left to open it.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-const th = {
-  padding: "10px 8px",
-  textAlign: "left" as const,
-  fontWeight: 700,
-  fontSize: 15,
-  borderBottom: "2px solid #eaeaea",
-};
-const td = {
-  padding: "10px 8px",
-  fontSize: 15,
-  borderBottom: "1px solid #eaeaea",
-};
