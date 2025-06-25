@@ -75,6 +75,7 @@ export default function Sidebar({
       <div style={{ padding: 12 }}>
         <input
           type="search"
+          aria-label="Search"
           placeholder="Search…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
