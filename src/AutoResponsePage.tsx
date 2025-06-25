@@ -10,13 +10,20 @@ export default function AutoResponsePage({ colors }: any) {
   const TAGS = ["support", "sales", "accounts", "leads"];
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auto-replies`)
-      .then((r) => r.json())
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      });
+    loadReplies();
   }, []);
+
+  async function loadReplies() {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/auto-replies`);
+      const d = await r.json();
+      setData(d);
+    } catch (err) {
+      console.error("Failed to load replies", err);
+    }
+    setLoading(false);
+  }
 
   function handleChange(field: string, value: string) {
     setForm({ ...form, [field]: value });
@@ -29,11 +36,19 @@ export default function AutoResponsePage({ colors }: any) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const res = await fetch(`${API_BASE}/api/auto-replies`);
-    const updated = await res.json();
-    setData(updated);
+    await loadReplies();
     setForm({ tag: "", hours: "", reply: "" });
     setEditingId(null);
+  }
+
+  async function remove(id: number) {
+    if (!confirm("Are you sure you want to delete this reply?")) return;
+    await fetch(`${API_BASE}/api/auto-reply-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    await loadReplies();
   }
 
   function edit(row: any) {
@@ -153,7 +168,7 @@ export default function AutoResponsePage({ colors }: any) {
                 <tr>
                   <th style={{ textAlign: "left", padding: 8 }}>Hours</th>
                   <th style={{ textAlign: "left", padding: 8 }}>Reply</th>
-                  <th></th>
+                  <th style={{ width: 140 }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -170,12 +185,28 @@ export default function AutoResponsePage({ colors }: any) {
                           border: "none",
                           borderRadius: 6,
                           padding: "4px 10px",
+                          marginRight: 6,
                           fontWeight: 600,
                           fontSize: 14,
                           cursor: "pointer",
                         }}
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => remove(row.id)}
+                        style={{
+                          background: "#666",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 6,
+                          padding: "4px 10px",
+                          fontWeight: 600,
+                          fontSize: 14,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>
