@@ -2,8 +2,24 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-interface Message { /* same as above */ }
-interface ChatSummary { /* same as above */ }
+interface Message {
+  id: number;
+  from_number: string;
+  body: string;
+  direction: "incoming" | "outgoing";
+  timestamp: number;
+  media_url?: string;
+  location_json?: string;
+}
+
+interface ChatSummary {
+  from_number: string;
+  name: string;
+  email: string;
+  customer_id: string;
+  last_ts: number;
+  last_message: string;
+}
 
 export default function SalesPage({ colors }: any) {
   const [chats, setChats] = useState<ChatSummary[]>([]);
@@ -15,20 +31,24 @@ export default function SalesPage({ colors }: any) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => { fetchSalesChats(); }, []);
+
   async function fetchSalesChats() {
     setLoadingChats(true);
     const res = await fetch(`${API_BASE}/api/sales-chats`);
-    setChats(await res.json());
+    const data = await res.json();
+    setChats(data);
     setLoadingChats(false);
   }
 
   useEffect(() => {
     if (selected) loadMessages(selected.from_number);
   }, [selected]);
+
   async function loadMessages(phone: string) {
     setLoadingMsgs(true);
     const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
-    setMessages(await res.json());
+    const msgs = await res.json();
+    setMessages(msgs);
     setLoadingMsgs(false);
   }
 
@@ -53,7 +73,7 @@ export default function SalesPage({ colors }: any) {
       body: JSON.stringify({ phone: selected.from_number }),
     });
     setSelected(null);
-    fetchSalesChats();
+    fetchSupportChats();
   }
 
   return (
@@ -70,7 +90,7 @@ export default function SalesPage({ colors }: any) {
         {loadingChats
           ? <div style={{ color: colors.sub }}>Loading…</div>
           : chats.length === 0
-            ? <div style={{ color: colors.sub }}>No open sales chats</div>
+            ? <div style={{ color: colors.sub }}>No open Sales chats</div>
             : chats.map(c => (
                 <div
                   key={c.from_number}
@@ -97,7 +117,6 @@ export default function SalesPage({ colors }: any) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {selected ? (
           <>
-            {/* header */}
             <div style={{
               padding: "12px 16px",
               borderBottom: `1px solid ${colors.border}`,
@@ -135,7 +154,6 @@ export default function SalesPage({ colors }: any) {
               </div>
             </div>
 
-            {/* messages */}
             <div style={{
               flex: 1,
               padding: 16,
@@ -180,7 +198,6 @@ export default function SalesPage({ colors }: any) {
               }
             </div>
 
-            {/* composer */}
             <div style={{
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
