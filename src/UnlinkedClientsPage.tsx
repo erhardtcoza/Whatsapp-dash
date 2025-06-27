@@ -210,4 +210,52 @@ export default function UnlinkedClientsPage({ colors, onOpenChat }: any) {
                           style={{
                             background: "#28a745",
                             color: "#fff",
-                            bo
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => closeVerify(c.from_number)}
+                          style={{
+                            background: "#aaa",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleMessageClient(c.from_number)}
+                          style={{
+                            background: "#ffc107",
+                            color: "#000",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          Message Client for Security Checks
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
