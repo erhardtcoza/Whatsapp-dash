@@ -1,249 +1,249 @@
 // src/SupportPage.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
 
-interface Message {
-  id: number;
-  from_number: string;
-  body: string;
-  direction: "incoming" | "outgoing";
-  timestamp: number;
-  media_url?: string;
-  location_json?: string;
-}
-
-interface ChatSummary {
-  from_number: string;
+interface Session {
+  ticket: string;
+  phone: string;
   name: string;
-  email: string;
   customer_id: string;
-  last_ts: number;
-  last_message: string;
+  department: string;
+  start_ts: number;
+  end_ts: number | null;
 }
 
 export default function SupportPage({ colors }: any) {
-  const [chats, setChats] = useState<ChatSummary[]>([]);
-  const [selected, setSelected] = useState<ChatSummary | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selected, setSelected] = useState<Session | null>(null);
+  const [allMessages, setAllMessages] = useState<any[]>([]);
+  const [reply, setReply] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchSupportChats(); }, []);
-
-  async function fetchSupportChats() {
-    setLoadingChats(true);
-    const res = await fetch(`${API_BASE}/api/support-chats`);
-    const data = await res.json();
-    setChats(data);
-    setLoadingChats(false);
-  }
-
+  // 1) load open account sessions
   useEffect(() => {
-    if (selected) loadMessages(selected.from_number);
+    fetch(`${API_BASE}/api/support-chatsessions`)
+      .then(r => r.json())
+      .then(setSessions);
+  }, []);
+
+  // 2) when a session is selected, load ALL messages for that phone
+  useEffect(() => {
+    if (!selected) return;
+    fetch(`${API_BASE}/api/messages?phone=${selected.phone}`)
+      .then(r => r.json())
+      .then(msgs => {
+        setAllMessages(msgs);
+        // scroll after render
+        setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
+      });
   }, [selected]);
 
-  async function loadMessages(phone: string) {
-    setLoadingMsgs(true);
-    const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
-    const msgs = await res.json();
-    setMessages(msgs);
-    setLoadingMsgs(false);
-  }
+  // 3) compute only the messages in this session
+  const sessionMessages = selected
+    ? allMessages.filter(m =>
+        m.timestamp >= selected.start_ts &&
+        (selected.end_ts === null || m.timestamp <= selected.end_ts)
+      )
+    : [];
 
-  async function sendMessage() {
-    if (!selected || !input.trim()) return;
-    setSending(true);
+  // 4) send a reply
+  async function sendReply() {
+    if (!selected || !reply.trim()) return;
     await fetch(`${API_BASE}/api/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selected.from_number, body: input.trim() }),
+      body: JSON.stringify({ phone: selected.phone, body: reply.trim() }),
     });
-    setInput("");
-    await loadMessages(selected.from_number);
-    setSending(false);
+    setReply("");
+    // reload that session's messages
+    const msgs = await fetch(`${API_BASE}/api/messages?phone=${selected.phone}`).then(r => r.json());
+    setAllMessages(msgs);
+    setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
   }
 
-  async function closeChat() {
+  // 5) close session
+  async function closeSession() {
     if (!selected) return;
-    await fetch(`${API_BASE}/api/close-chat`, {
+    // 5a) close on server
+    await fetch(`${API_BASE}/api/close-session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selected.from_number }),
+      body: JSON.stringify({ ticket: selected.ticket }),
     });
+    // 5b) notify user
+    await fetch(`${API_BASE}/api/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: selected.phone,
+        body: "This chat session has been closed. To start a new one, just say hi!"
+      }),
+    });
+    // 5c) reset selection & reload sessions
     setSelected(null);
-    fetchSupportChats();
+    setSessions(await fetch(`${API_BASE}/api/support-chatsessions`).then(r => r.json()));
   }
 
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      {/* Sidebar */}
-      <div style={{
-        width: 280,
-        borderRight: `1px solid ${colors.border}`,
-        padding: 16,
-        overflowY: "auto",
-        background: colors.sidebar
-      }}>
-        <h3 style={{ margin: "0 0 12px", color: colors.text }}>Support Chats</h3>
-        {loadingChats
-          ? <div style={{ color: colors.sub }}>Loading…</div>
-          : chats.length === 0
-            ? <div style={{ color: colors.sub }}>No open support chats</div>
-            : chats.map(c => (
-                <div
-                  key={c.from_number}
-                  onClick={() => setSelected(c)}
-                  style={{
-                    padding: "8px 12px",
-                    marginBottom: 8,
-                    background: selected?.from_number === c.from_number ? colors.red : colors.card,
-                    color: selected?.from_number === c.from_number ? "#fff" : colors.text,
-                    borderRadius: 6,
-                    cursor: "pointer",
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{c.name || c.from_number}</div>
-                  <div style={{ fontSize: 12, color: colors.sub, marginTop: 2 }}>
-                    {c.last_message}
-                  </div>
-                </div>
-              ))
-        }
+    <div style={{ display: "flex", padding: 32, gap: 32 }}>
+      {/* SESSION LIST */}
+      <div style={{ width: 300 }}>
+        <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 12 }}>
+          support Sessions
+        </h3>
+        <div style={{
+          background: colors.card,
+          borderRadius: 8,
+          maxHeight: "75vh",
+          overflowY: "auto",
+          border: `1px solid ${colors.border}`,
+        }}>
+          {sessions.map(sess => (
+            <div
+              key={sess.ticket}
+              onClick={() => setSelected(sess)}
+              style={{
+                padding: "10px 14px",
+                cursor: "pointer",
+                background: selected?.ticket === sess.ticket ? colors.sidebarSel : "none",
+                color: selected?.ticket === sess.ticket ? "#fff" : colors.text,
+                borderBottom: `1px solid ${colors.border}`,
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>
+                [{sess.customer_id}] {sess.name}
+              </div>
+              <div style={{ fontSize: 13, color: colors.sub }}>
+                {sess.ticket} · {new Date(sess.start_ts).toLocaleString()}
+                {sess.end_ts ? " (closed)" : ""}
+              </div>
+            </div>
+          ))}
+          {sessions.length === 0 && (
+            <div style={{ padding: 20, color: colors.sub }}>No open sessions</div>
+          )}
+        </div>
       </div>
 
-      {/* Chat window */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      {/* CHAT WINDOW */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        background: colors.card,
+        borderRadius: 8,
+        border: `1px solid ${colors.border}`,
+        overflow: "hidden",
+      }}>
         {selected ? (
           <>
+            {/* header with Close Window & Close Session */}
             <div style={{
-              padding: "12px 16px",
+              padding: "10px 16px",
               borderBottom: `1px solid ${colors.border}`,
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center"
+              alignItems: "center",
             }}>
-              <div>
-                <strong>{selected.name || selected.from_number}</strong><br/>
-                <small style={{ color: colors.sub }}>{selected.email}</small>
+              <div style={{ fontWeight: 600 }}>
+                Session: {selected.ticket}
               </div>
-              <div>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => setSelected(null)}
                   style={{
                     background: "none",
                     border: "none",
-                    fontSize: 18,
+                    fontSize: 20,
                     cursor: "pointer",
-                    marginRight: 12,
-                    color: colors.sub
+                    color: colors.sub,
                   }}
                 >✕</button>
                 <button
-                  onClick={closeChat}
+                  onClick={closeSession}
                   style={{
                     background: colors.red,
                     color: "#fff",
                     border: "none",
                     borderRadius: 6,
                     padding: "6px 12px",
-                    cursor: "pointer"
+                    fontWeight: 600,
+                    cursor: "pointer",
                   }}
-                >Close Session</button>
+                >
+                  Close Session
+                </button>
               </div>
             </div>
 
-            <div style={{
-              flex: 1,
-              padding: 16,
-              overflowY: "auto",
-              background: colors.bg
-            }}>
-              {loadingMsgs
-                ? <div style={{ color: colors.sub }}>Loading messages…</div>
-                : messages.length === 0
-                  ? <div style={{ color: colors.sub }}>No messages yet</div>
-                  : messages.map(msg => (
-                      <div
-                        key={msg.id}
-                        style={{
-                          marginBottom: 12,
-                          textAlign: msg.direction === "outgoing" ? "right" : "left"
-                        }}
-                      >
-                        <div style={{
-                          display: "inline-block",
-                          background: msg.direction === "outgoing" ? colors.msgOut : colors.card,
-                          color: msg.direction === "outgoing" ? "#fff" : colors.text,
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          maxWidth: "70%",
-                          wordBreak: "break-word"
-                        }}>
-                          {msg.body}
-                          {msg.media_url && (
-                            <div style={{ marginTop: 6 }}>
-                              <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
-                                [View Media]
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 10, color: colors.sub, marginTop: 2 }}>
-                          {new Date(msg.timestamp).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    ))
-              }
+            {/* messages */}
+            <div
+              ref={scrollRef}
+              style={{ flex: 1, padding: 16, overflowY: "auto" }}
+            >
+              {sessionMessages.map(m => (
+                <div
+                  key={m.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start",
+                    marginBottom: 8,
+                  }}
+                >
+                  <div style={{
+                    background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
+                    color: m.direction === "outgoing" ? "#fff" : colors.text,
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    maxWidth: "70%",
+                    wordBreak: "break-word",
+                  }}>
+                    {m.body}
+                  </div>
+                </div>
+              ))}
             </div>
 
+            {/* reply box */}
             <div style={{
-              padding: 16,
               borderTop: `1px solid ${colors.border}`,
+              padding: 12,
               display: "flex",
               gap: 8,
             }}>
               <input
-                type="text"
-                value={input}
-                placeholder="Type your message…"
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && sendMessage()}
+                value={reply}
+                onChange={e => setReply(e.target.value)}
+                placeholder="Type your reply…"
                 style={{
                   flex: 1,
                   borderRadius: 6,
                   border: `1px solid ${colors.border}`,
                   padding: "8px 12px",
-                  fontSize: 14,
                   background: colors.input,
-                  color: colors.inputText
+                  color: colors.inputText,
+                  fontSize: 14,
                 }}
-                disabled={sending}
               />
               <button
-                onClick={sendMessage}
+                onClick={sendReply}
                 style={{
                   background: colors.red,
                   color: "#fff",
                   border: "none",
                   borderRadius: 6,
                   padding: "8px 16px",
-                  cursor: "pointer"
+                  fontWeight: 700,
+                  cursor: "pointer",
                 }}
-                disabled={sending}
-              >Send</button>
+              >
+                Send
+              </button>
             </div>
           </>
         ) : (
-          <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: colors.sub
-          }}>
-            Select a chat from the left to open it.
+          <div style={{ padding: 40, color: colors.sub }}>
+            Select a session to open its chat.
           </div>
         )}
       </div>
