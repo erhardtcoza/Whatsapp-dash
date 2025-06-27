@@ -30,7 +30,9 @@ export default function Sidebar({
     { label: "Accounts", icon: "💳", key: "accounts" },
     { label: "Sales", icon: "💼", key: "sales" },
     { label: "Leads", icon: "📈", key: "leads" },
-    { label: "Broadcast", icon: "📢", key: "broadcast" },
+    // new:
+    { label: "Send Message", icon: "✉️", key: "send" },
+    // auto-reply
     { label: "Auto Response", icon: "🤖", key: "autoresp" },
     { label: "Office Hours", icon: "⏰", key: "office" },
     { label: "System", icon: "⚙️", key: "system" },
@@ -38,29 +40,15 @@ export default function Sidebar({
   ];
 
   return (
-    <div
-      style={{
-        width: 190,
-        height: "100vh",
-        background: colors.sidebar,
-        borderRight: `1.5px solid ${colors.border}`,
-        display: "flex",
-        flexDirection: "column",
-        position: "fixed",
-        left: 0,
-        top: 0,
-        zIndex: 20,
-      }}
-    >
+    <div style={{
+      width: 190, height: "100vh", background: colors.sidebar,
+      borderRight: `1.5px solid ${colors.border}`, display: "flex",
+      flexDirection: "column", position: "fixed", left: 0, top: 0, zIndex: 20
+    }}>
       <div style={{ padding: "0 12px 18px 22px" }}>
-        <img
-          src={vinetLogo}
-          alt="Vinet"
-          style={{ width: 80, marginBottom: 6 }}
-        />
+        <img src={vinetLogo} alt="Vinet" style={{ width: 80, marginBottom: 6 }} />
       </div>
-
-      {menuItems.map((item) => (
+      {menuItems.map(item => (
         <SidebarItem
           key={item.key}
           label={item.label}
@@ -69,57 +57,33 @@ export default function Sidebar({
           onClick={() => onSelect(item.key)}
         />
       ))}
-
       <div style={{ flex: 1 }} />
-
       <div style={{ padding: 12 }}>
         <input
           type="search"
-          aria-label="Search"
           placeholder="Search…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           style={{
-            width: "100%",
-            borderRadius: 7,
-            border: `1.3px solid ${colors.border}`,
-            padding: "6px 10px",
-            background: colors.input,
-            color: colors.inputText,
-            fontSize: 14,
+            width: "100%", borderRadius: 7,
+            border: `1.3px solid ${colors.border}`, padding: "6px 10px",
+            background: colors.input, color: colors.inputText, fontSize: 14,
           }}
         />
       </div>
-
       <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-        <button
-          onClick={onDarkMode}
-          style={{
-            background: "none",
-            color: colors.sidebarTxt,
-            border: `1px solid ${colors.border}`,
-            borderRadius: 6,
-            padding: "5px 10px",
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={onDarkMode} style={{
+          background: "none", color: colors.sidebarTxt,
+          border: `1px solid ${colors.border}`, borderRadius: 6,
+          padding: "5px 10px", fontSize: 13, cursor: "pointer"
+        }}>
           {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
         </button>
-
-        <button
-          onClick={onLogout}
-          style={{
-            background: colors.red,
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            padding: "6px 10px",
-            fontWeight: 600,
-            fontSize: 13,
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={onLogout} style={{
+          background: colors.red, color: "#fff", border: "none",
+          borderRadius: 6, padding: "6px 10px", fontWeight: 600,
+          fontSize: 13, cursor: "pointer"
+        }}>
           Logout
         </button>
       </div>
@@ -128,30 +92,17 @@ export default function Sidebar({
 }
 
 function SidebarItem({
-  label,
-  icon,
-  selected,
-  onClick,
-}: {
-  label: string;
-  icon: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
+  label, icon, selected, onClick,
+}: { label: string; icon: string; selected: boolean; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
       style={{
-        padding: "8px 14px 8px 22px",
-        fontWeight: 500,
-        fontSize: 15,
+        padding: "8px 14px 8px 22px", fontWeight: 500, fontSize: 15,
         color: selected ? "#fff" : "#23262b",
         background: selected ? "#e2001a" : "none",
-        borderRadius: 8,
-        marginBottom: 1,
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
+        borderRadius: 8, marginBottom: 1, cursor: "pointer",
+        display: "flex", alignItems: "center",
       }}
     >
       <span style={{ marginRight: 10, fontSize: 17 }}>{icon}</span>
