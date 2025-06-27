@@ -1,5 +1,3 @@
-// src/UnlinkedClientsPage.tsx
-
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
@@ -8,6 +6,7 @@ interface Client {
   name: string;
   email: string;
   last_msg: number;
+  welcome_msg?: string; // Add this field if you store initial msg in backend
 }
 
 export default function UnlinkedClientsPage({ colors }: any) {
@@ -15,8 +14,8 @@ export default function UnlinkedClientsPage({ colors }: any) {
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState<Record<string, { name: string; email: string; customer_id: string }>>({});
+  const [error, setError] = useState<Record<string, string>>({});
 
-  // Fetch unlinked clients
   useEffect(() => {
     fetchClients();
   }, []);
@@ -30,6 +29,7 @@ export default function UnlinkedClientsPage({ colors }: any) {
   }
 
   function openVerify(phone: string, existing: Client) {
+    setError(e => ({ ...e, [phone]: "" }));
     setVerifying(v => ({ ...v, [phone]: true }));
     setForm(f => ({
       ...f,
@@ -39,6 +39,7 @@ export default function UnlinkedClientsPage({ colors }: any) {
 
   function closeVerify(phone: string) {
     setVerifying(v => ({ ...v, [phone]: false }));
+    setError(e => ({ ...e, [phone]: "" }));
   }
 
   function handleChange(phone: string, field: keyof Client | "customer_id", value: string) {
@@ -50,13 +51,24 @@ export default function UnlinkedClientsPage({ colors }: any) {
 
   async function submitVerify(phone: string) {
     const { name, email, customer_id } = form[phone];
-    await fetch(`${API_BASE}/api/update-customer`, {
+    // Simulate verification logic - you should replace this with your actual logic
+    if (!name || !email || !customer_id) {
+      setError(e => ({ ...e, [phone]: "Please complete all fields." }));
+      return;
+    }
+    // Try to verify (replace with actual verification result handling)
+    const response = await fetch(`${API_BASE}/api/update-customer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, name, email, customer_id })
     });
-    closeVerify(phone);
-    fetchClients();
+    const result = await response.json();
+    if (result && result.success) {
+      closeVerify(phone);
+      fetchClients();
+    } else {
+      setError(e => ({ ...e, [phone]: "Verification failed. Please check details or message the client for security checks." }));
+    }
   }
 
   async function deleteClient(phone: string) {
@@ -69,15 +81,39 @@ export default function UnlinkedClientsPage({ colors }: any) {
     fetchClients();
   }
 
+  async function messageClient(phone: string) {
+    // Send a message via backend to ask the client for extra security checks
+    await fetch(`${API_BASE}/api/message-client`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone,
+        message:
+          "Hi, we couldn't verify your information. Please reply with your account number or contact our support for further assistance."
+      }),
+    });
+    alert("Message sent to client for more security checks.");
+    setError(e => ({ ...e, [phone]: "" }));
+    closeVerify(phone);
+  }
+
   return (
-    <div style={{ padding: 32 }}>
+    <div style={{
+      padding: 32,
+      maxWidth: 1000,
+      margin: "0 auto",
+      alignItems: "flex-start",
+      textAlign: "left"
+    }}>
+      {/* Page heading: only shown once */}
       <h2 style={{
         color: colors.text,
         fontWeight: 600,
         fontSize: 22,
-        marginBottom: 18
+        marginBottom: 18,
+        textAlign: "left"
       }}>
-        Unverified Clients
+        Unlinked Client Chats
       </h2>
 
       {loading ? (
@@ -96,6 +132,7 @@ export default function UnlinkedClientsPage({ colors }: any) {
               <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Last Msg</th>
               <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Name</th>
               <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Email</th>
+              <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Initial Welcome Msg</th>
               <th></th>
             </tr>
           </thead>
@@ -108,6 +145,9 @@ export default function UnlinkedClientsPage({ colors }: any) {
                 </td>
                 <td style={{ padding: "8px" }}>{c.name}</td>
                 <td style={{ padding: "8px" }}>{c.email}</td>
+                <td style={{ padding: "8px", maxWidth: 260, fontSize: 13 }}>
+                  {c.welcome_msg || "-"}
+                </td>
                 <td style={{ padding: "8px", display: "flex", gap: 6 }}>
                   {!verifying[c.from_number] ? (
                     <>
@@ -123,7 +163,7 @@ export default function UnlinkedClientsPage({ colors }: any) {
                           fontWeight: 600
                         }}
                       >
-                        Verify
+                        Verify / Edit
                       </button>
                       <button
                         onClick={() => deleteClient(c.from_number)}
@@ -141,74 +181,95 @@ export default function UnlinkedClientsPage({ colors }: any) {
                       </button>
                     </>
                   ) : (
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <input
-                        type="text"
-                        placeholder="Name"
-                        value={form[c.from_number]?.name || ""}
-                        onChange={e => handleChange(c.from_number, "name", e.target.value)}
-                        style={{
-                          padding: "6px",
-                          border: `1px solid ${colors.border}`,
-                          borderRadius: 6,
-                          fontSize: 14,
-                          width: 120
-                        }}
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        value={form[c.from_number]?.email || ""}
-                        onChange={e => handleChange(c.from_number, "email", e.target.value)}
-                        style={{
-                          padding: "6px",
-                          border: `1px solid ${colors.border}`,
-                          borderRadius: 6,
-                          fontSize: 14,
-                          width: 160
-                        }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Customer ID"
-                        value={form[c.from_number]?.customer_id || ""}
-                        onChange={e => handleChange(c.from_number, "customer_id", e.target.value)}
-                        style={{
-                          padding: "6px",
-                          border: `1px solid ${colors.border}`,
-                          borderRadius: 6,
-                          fontSize: 14,
-                          width: 100
-                        }}
-                      />
-                      <button
-                        onClick={() => submitVerify(c.from_number)}
-                        style={{
-                          background: "#28a745",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "6px 12px",
-                          cursor: "pointer",
-                          fontWeight: 600
-                        }}
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => closeVerify(c.from_number)}
-                        style={{
-                          background: "#aaa",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "6px 12px",
-                          cursor: "pointer",
-                          fontWeight: 600
-                        }}
-                      >
-                        Cancel
-                      </button>
+                    <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <input
+                          type="text"
+                          placeholder="Name"
+                          value={form[c.from_number]?.name || ""}
+                          onChange={e => handleChange(c.from_number, "name", e.target.value)}
+                          style={{
+                            padding: "6px",
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 6,
+                            fontSize: 14,
+                            width: 120
+                          }}
+                        />
+                        <input
+                          type="email"
+                          placeholder="Email"
+                          value={form[c.from_number]?.email || ""}
+                          onChange={e => handleChange(c.from_number, "email", e.target.value)}
+                          style={{
+                            padding: "6px",
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 6,
+                            fontSize: 14,
+                            width: 160
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Customer ID"
+                          value={form[c.from_number]?.customer_id || ""}
+                          onChange={e => handleChange(c.from_number, "customer_id", e.target.value)}
+                          style={{
+                            padding: "6px",
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 6,
+                            fontSize: 14,
+                            width: 100
+                          }}
+                        />
+                      </div>
+                      {error[c.from_number] && (
+                        <div style={{ color: colors.red, fontSize: 13 }}>{error[c.from_number]}</div>
+                      )}
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          onClick={() => submitVerify(c.from_number)}
+                          style={{
+                            background: "#28a745",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => closeVerify(c.from_number)}
+                          style={{
+                            background: "#aaa",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => messageClient(c.from_number)}
+                          style={{
+                            background: "#ffc107",
+                            color: "#000",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 12px",
+                            cursor: "pointer",
+                            fontWeight: 600
+                          }}
+                        >
+                          Message Client for Security Checks
+                        </button>
+                      </div>
                     </div>
                   )}
                 </td>
