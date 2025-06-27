@@ -51,12 +51,10 @@ export default function UnlinkedClientsPage({ colors }: any) {
 
   async function submitVerify(phone: string) {
     const { name, email, customer_id } = form[phone];
-    // Simulate verification logic - you should replace this with your actual logic
     if (!name || !email || !customer_id) {
       setError(e => ({ ...e, [phone]: "Please complete all fields." }));
       return;
     }
-    // Try to verify (replace with actual verification result handling)
     const response = await fetch(`${API_BASE}/api/update-customer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -82,7 +80,6 @@ export default function UnlinkedClientsPage({ colors }: any) {
   }
 
   async function messageClient(phone: string) {
-    // Send a message via backend to ask the client for extra security checks
     await fetch(`${API_BASE}/api/message-client`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -105,17 +102,6 @@ export default function UnlinkedClientsPage({ colors }: any) {
       alignItems: "flex-start",
       textAlign: "left"
     }}>
-      {/* Page heading: only shown once */}
-      <h2 style={{
-        color: colors.text,
-        fontWeight: 600,
-        fontSize: 22,
-        marginBottom: 18,
-        textAlign: "left"
-      }}>
-        Unlinked Client Chats
-      </h2>
-
       {loading ? (
         <div style={{ color: colors.sub }}>Loading…</div>
       ) : (
