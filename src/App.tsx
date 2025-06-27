@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Login from "./Login";
@@ -7,6 +9,7 @@ import SupportPage from "./SupportPage";
 import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
 import LeadsPage from "./LeadsPage";
+import SendMessagePage from "./SendMessagePage";
 import BroadcastPage from "./BroadcastPage";
 import AutoResponsePage from "./AutoResponsePage";
 import OfficeHoursPage from "./OfficeHoursPage";
@@ -21,6 +24,7 @@ const SECTION_TITLES: Record<string, string> = {
   accounts: "Accounts",
   sales: "Sales",
   leads: "Leads",
+  send: "Send Message",
   broadcast: "Broadcast",
   autoresp: "Auto Response",
   office: "Office Hours Management",
@@ -29,25 +33,39 @@ const SECTION_TITLES: Record<string, string> = {
 };
 
 export default function App() {
+  // Set document title once
   useEffect(() => {
     document.title = "Vinet WhatsApp Portal";
   }, []);
 
+  // Dark mode state persisted in localStorage
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("wa-dark") === "1");
-
   useEffect(() => {
     document.body.style.background = darkMode ? "#1a1d22" : "#f7f7fa";
     localStorage.setItem("wa-dark", darkMode ? "1" : "0");
   }, [darkMode]);
 
+  // Logged-in user state persisted in localStorage
   const [user, setUser] = useState<{ username: string; role: string } | null>(() => {
     const u = localStorage.getItem("wa-user");
     return u ? JSON.parse(u) : null;
   });
 
+  function handleLoginSuccess(userObj: { username: string; role: string }) {
+    setUser(userObj);
+    localStorage.setItem("wa-user", JSON.stringify(userObj));
+  }
+
+  function handleLogout() {
+    setUser(null);
+    localStorage.removeItem("wa-user");
+  }
+
+  // Current section & search bar term
   const [section, setSection] = useState("unlinked");
   const [search, setSearch] = useState("");
 
+  // Color palette
   const c = darkMode
     ? {
         bg: "#1a1d22",
@@ -90,19 +108,10 @@ export default function App() {
         msgOut: "#e2001a",
       };
 
-  function handleLoginSuccess(userObj: any) {
-    setUser(userObj);
-    localStorage.setItem("wa-user", JSON.stringify(userObj));
+  // Not logged in? show Login
+  if (!user) {
+    return <Login onLogin={handleLoginSuccess} colors={c} />;
   }
-
-  function handleLogout() {
-    setUser(null);
-    localStorage.removeItem("wa-user");
-  }
-
-  if (!user) return <Login onLogin={handleLoginSuccess} colors={c} />;
-
-  const isAdmin = user.role === "admin";
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
@@ -117,7 +126,15 @@ export default function App() {
         user={user}
         onLogout={handleLogout}
       />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", background: c.bg }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+          background: c.bg,
+        }}
+      >
         <div
           style={{
             flex: 1,
@@ -134,6 +151,7 @@ export default function App() {
             margin: "24px auto 40px auto",
           }}
         >
+          {/* Section header */}
           <div
             style={{
               fontWeight: 700,
@@ -149,6 +167,7 @@ export default function App() {
             {SECTION_TITLES[section] || "Dashboard"}
           </div>
 
+          {/* Section content */}
           <div style={{ padding: "0 40px", flex: 1 }}>
             {{
               unlinked: <UnlinkedClientsPage colors={c} darkMode={darkMode} />,
@@ -157,19 +176,36 @@ export default function App() {
               accounts: <AccountsPage colors={c} darkMode={darkMode} />,
               sales: <SalesPage colors={c} darkMode={darkMode} />,
               leads: <LeadsPage colors={c} darkMode={darkMode} />,
+              send: <SendMessagePage colors={c} darkMode={darkMode} />,
+              // legacy Broadcast page if you still use it
               broadcast: <BroadcastPage colors={c} darkMode={darkMode} />,
               autoresp: <AutoResponsePage colors={c} darkMode={darkMode} />,
               office: <OfficeHoursPage colors={c} darkMode={darkMode} />,
               system: <SystemPage colors={c} darkMode={darkMode} />,
-              adduser: isAdmin ? (
-                <AddUserPage colors={c} />
-              ) : (
-                <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
-                  You do not have access to this section.
-                </div>
-              ),
+              adduser:
+                user.role === "admin" ? (
+                  <AddUserPage colors={c} />
+                ) : (
+                  <div
+                    style={{
+                      color: c.red,
+                      fontWeight: 700,
+                      padding: 48,
+                      textAlign: "center",
+                    }}
+                  >
+                    You do not have access to this section.
+                  </div>
+                ),
             }[section] || (
-              <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
+              <div
+                style={{
+                  color: c.red,
+                  fontWeight: 700,
+                  padding: 48,
+                  textAlign: "center",
+                }}
+              >
                 Invalid section
               </div>
             )}
