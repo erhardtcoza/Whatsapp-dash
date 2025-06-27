@@ -1,248 +1,123 @@
-// src/LeadsPage.tsx
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-interface ChatSummary {
-  from_number: string;
-  name: string;
-  email: string;
-  customer_id: string;
-  last_ts: number;
-  last_message: string;
-  unread_count?: number;
-  tag?: string;
-}
-
-interface Message {
-  id: number;
-  from_number: string;
-  body: string;
-  tag: string;
-  timestamp: number;
-  direction: "incoming" | "outgoing";
-  media_url?: string | null;
-  location_json?: string | null;
-  seen?: number;
-}
-
 export default function LeadsPage({ colors }: any) {
-  const [chats, setChats] = useState<ChatSummary[]>([]);
-  const [selected, setSelected] = useState<ChatSummary | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/leads-chats`)
-      .then((r) => r.json())
-      .then((d: ChatSummary[]) => {
-        setChats(d);
-        setLoadingChats(false);
-      });
+    fetch(`${API_BASE}/api/leads`)
+      .then(r => r.json())
+      .then(setLeads);
   }, []);
 
-  async function openChat(chat: ChatSummary) {
-    setSelected(chat);
-    setLoadingMsgs(true);
-    const res = await fetch(
-      `${API_BASE}/api/messages?phone=${encodeURIComponent(chat.from_number)}`
+  async function markContacted(phone: string) {
+    await fetch(`${API_BASE}/api/lead-contacted`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    setLeads(leads =>
+      leads.map(lead =>
+        lead.phone === phone ? { ...lead, contacted: 1 } : lead
+      )
     );
-    const msgs: Message[] = await res.json();
-    setMessages(msgs);
-    setLoadingMsgs(false);
   }
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, marginBottom: 18 }}>Leads</h2>
-      <div style={{ display: "flex", gap: 24 }}>
-        {/* Chat list */}
-        <div
-          style={{
-            width: 280,
-            background: colors.card,
-            borderRadius: 8,
-            overflow: "auto",
-            maxHeight: 600,
-          }}
-        >
-          {loadingChats ? (
-            <div style={{ padding: 16, color: colors.sub }}>Loading…</div>
-          ) : chats.length === 0 ? (
-            <div style={{ padding: 16, color: colors.sub }}>
-              No open lead chats
-            </div>
-          ) : (
-            chats.map((chat) => (
-              <div
-                key={chat.from_number}
-                onClick={() => openChat(chat)}
-                style={{
-                  padding: 12,
-                  borderBottom: `1px solid ${colors.border}`,
-                  cursor: "pointer",
-                  background:
-                    selected?.from_number === chat.from_number
-                      ? colors.sidebarSel
-                      : "none",
-                  color:
-                    selected?.from_number === chat.from_number
-                      ? "#fff"
-                      : colors.text,
-                }}
-              >
-                <div>
-                  <strong>{chat.name || chat.from_number}</strong>
-                </div>
-                <div style={{ fontSize: 12, color: colors.sub }}>
-                  {chat.last_message}
-                </div>
-                {chat.unread_count ? (
-                  <span
-                    style={{
-                      background: colors.red,
-                      color: "#fff",
-                      borderRadius: 8,
-                      padding: "2px 6px",
-                      fontSize: 12,
-                      float: "right",
-                    }}
-                  >
-                    {chat.unread_count}
-                  </span>
-                ) : null}
+    <div style={{ display: "flex", padding: 32, gap: 32 }}>
+      {/* LEADS LIST */}
+      <div style={{ width: 380 }}>
+        <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 12 }}>
+          New Leads
+        </h3>
+        <div style={{
+          background: colors.card,
+          borderRadius: 8,
+          maxHeight: "75vh",
+          overflowY: "auto",
+          border: `1px solid ${colors.border}`,
+        }}>
+          {leads.length === 0 && (
+            <div style={{ padding: 20, color: colors.sub }}>No leads found.</div>
+          )}
+          {leads.map(lead => (
+            <div
+              key={lead.phone}
+              onClick={() => setSelected(lead)}
+              style={{
+                padding: "12px 14px",
+                cursor: "pointer",
+                background: selected?.phone === lead.phone ? colors.sidebarSel : "none",
+                color: selected?.phone === lead.phone ? "#fff" : colors.text,
+                borderBottom: `1px solid ${colors.border}`,
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>
+                {lead.name || "(No name)"} {lead.contacted ? "✅" : ""}
               </div>
-            ))
-          )}
+              <div style={{ fontSize: 13, color: colors.sub }}>
+                {lead.phone} · {lead.email}
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Chat window */}
-        <div
-          style={{
-            flex: 1,
-            background: colors.card,
-            borderRadius: 8,
-            padding: 16,
-            position: "relative",
-          }}
-        >
-          {selected ? (
-            loadingMsgs ? (
-              <div style={{ color: colors.sub }}>Loading messages…</div>
-            ) : (
-              <>
-                <div style={{ marginBottom: 12, fontWeight: 600 }}>
-                  Chat with {selected.name || selected.from_number}
-                  <button
-                    onClick={() => setSelected(null)}
-                    style={{
-                      float: "right",
-                      background: "none",
-                      border: "none",
-                      fontSize: 18,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    maxHeight: 400,
-                    overflow: "auto",
-                    marginBottom: 12,
-                  }}
-                >
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      style={{
-                        display: "flex",
-                        justifyContent:
-                          msg.direction === "outgoing"
-                            ? "flex-end"
-                            : "flex-start",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div
-                        style={{
-                          background:
-                            msg.direction === "outgoing"
-                              ? colors.msgOut
-                              : colors.msgIn,
-                          color:
-                            msg.direction === "outgoing"
-                              ? "#fff"
-                              : colors.text,
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          maxWidth: "70%",
-                        }}
-                      >
-                        {msg.body}
-                        {msg.media_url && (
-                          <div style={{ marginTop: 6 }}>
-                            <a href={msg.media_url} target="_blank">
-                              📎 Media
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Reply form */}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const input = (e.target as any).elements.reply.value.trim();
-                    if (!input) return;
-                    await fetch(`${API_BASE}/api/send-message`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        phone: selected.from_number,
-                        body: input,
-                      }),
-                    });
-                    openChat(selected);
-                    (e.target as any).reset();
-                  }}
-                >
-                  <input
-                    name="reply"
-                    placeholder="Type a message…"
-                    style={{
-                      width: "calc(100% - 100px)",
-                      padding: "8px 12px",
-                      borderRadius: 6,
-                      border: `1px solid ${colors.border}`,
-                      marginRight: 8,
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    style={{
-                      background: colors.red,
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 6,
-                      padding: "8px 16px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Send
-                  </button>
-                </form>
-              </>
-            )
-          ) : (
-            <div style={{ color: colors.sub }}>Select a chat to open</div>
-          )}
-        </div>
+      {/* LEAD DETAILS */}
+      <div style={{
+        flex: 1,
+        background: colors.card,
+        borderRadius: 8,
+        border: `1px solid ${colors.border}`,
+        padding: 24,
+        minHeight: 220,
+      }}>
+        {selected ? (
+          <div>
+            <h4 style={{ margin: "0 0 16px 0" }}>
+              {selected.name}
+              {selected.contacted ? (
+                <span style={{ color: "green", marginLeft: 10 }}>Contacted</span>
+              ) : null}
+            </h4>
+            <div style={{ marginBottom: 12 }}>
+              <b>Phone:</b> {selected.phone}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <b>Email:</b> {selected.email}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <b>Address:</b> {selected.address || "-"}
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <b>Created:</b>{" "}
+              {selected.created_ts
+                ? new Date(selected.created_ts).toLocaleString()
+                : "-"}
+            </div>
+            {!selected.contacted && (
+              <button
+                style={{
+                  background: colors.red,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "8px 16px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+                onClick={() => markContacted(selected.phone)}
+              >
+                Mark as Contacted
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{ color: colors.sub, padding: 40 }}>
+            Select a lead to view details.
+          </div>
+        )}
       </div>
     </div>
   );
