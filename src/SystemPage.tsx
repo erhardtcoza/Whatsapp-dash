@@ -9,126 +9,190 @@ interface Flow {
   description: string;
 }
 
-export default function SystemPage({ colors, darkMode }: { colors: any; darkMode: boolean }) {
+export default function SystemPage({ colors }: any) {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // TODO: fetch from your new /api/flows endpoint once implemented
-    // for now, stub:
-    const stub: Flow[] = [
-      { id: 1, name: "Welcome Flow", description: "Greets new contacts" },
-      { id: 2, name: "Re-engagement", description: "Follows up after 24h" },
-    ];
-    setFlows(stub);
-    setLoading(false);
+    fetchFlows();
   }, []);
 
-  function createNew() {
-    // stub: open a modal or navigate to a “create flow” page
-    const name = prompt("Name your new flow:");
-    if (!name) return;
-    const flow: Flow = { id: Date.now(), name, description: "" };
-    setFlows((f) => [...f, flow]);
-    setSelectedFlow(flow);
+  async function fetchFlows() {
+    setLoading(true);
+    try {
+      // replace with real endpoint when ready
+      const data = await fetch(`${API_BASE}/api/flows`).then(r => r.json());
+      setFlows(data);
+    } catch {
+      // stub data until backend exists
+      setFlows([
+        { id: 1, name: "Welcome Flow", description: "Greet new contacts" },
+        { id: 2, name: "Re-engagement", description: "Follow up after 24h" },
+      ]);
+    }
+    setLoading(false);
+  }
+
+  async function createFlow() {
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      await fetch(`${API_BASE}/api/flows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName, description: newDesc }),
+      });
+      setNewName("");
+      setNewDesc("");
+      await fetchFlows();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteFlow(id: number) {
+    if (!confirm("Delete this flow?")) return;
+    await fetch(`${API_BASE}/api/flows/${id}`, { method: "DELETE" });
+    if (selectedFlow?.id === id) setSelectedFlow(null);
+    fetchFlows();
   }
 
   return (
-    <div style={{ padding: 32, display: "flex", height: "100%" }}>
-      {/* Sidebar of Flows */}
-      <aside
-        style={{
-          width: 240,
-          marginRight: 24,
-          background: colors.card,
-          borderRadius: 8,
-          padding: 16,
-          boxShadow: darkMode ? "0 2px 8px #0004" : "0 2px 8px #0001",
-        }}
-      >
-        <h3 style={{ margin: 0, marginBottom: 12, color: colors.text }}>Flows</h3>
-        {loading ? (
-          <div style={{ color: colors.sub }}>Loading…</div>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {flows.map((f) => (
-              <li key={f.id} style={{ marginBottom: 8 }}>
-                <button
-                  onClick={() => setSelectedFlow(f)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "6px 10px",
-                    borderRadius: 6,
-                    border: "none",
-                    background: selectedFlow?.id === f.id ? colors.red : "transparent",
-                    color: selectedFlow?.id === f.id ? "#fff" : colors.text,
-                    cursor: "pointer",
-                    fontWeight: selectedFlow?.id === f.id ? 600 : 500,
-                  }}
-                >
-                  {f.name}
-                </button>
-              </li>
+    <div style={{ padding: 32 }}>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
+        Flow Builder
+      </h2>
+
+      {/* Flow list */}
+      {loading ? (
+        <div style={{ color: colors.sub }}>Loading…</div>
+      ) : (
+        <table style={{ width: "100%", background: colors.card, borderRadius: 8 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", padding: "8px 10px", color: colors.sub }}>Name</th>
+              <th style={{ textAlign: "left", padding: "8px 10px", color: colors.sub }}>Description</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {flows.map(flow => (
+              <tr key={flow.id}>
+                <td style={{ padding: "8px 10px" }}>{flow.name}</td>
+                <td style={{ padding: "8px 10px" }}>{flow.description}</td>
+                <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                  <button
+                    onClick={() => setSelectedFlow(flow)}
+                    style={{
+                      background: colors.red,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "4px 10px",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      marginRight: 6,
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteFlow(flow.id)}
+                    style={{
+                      background: "#aaa",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "4px 10px",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
             ))}
-          </ul>
-        )}
-        <button
-          onClick={createNew}
+          </tbody>
+        </table>
+      )}
+
+      {/* New flow form */}
+      <div style={{ marginTop: 24, display: "flex", gap: 10, alignItems: "center" }}>
+        <input
+          type="text"
+          placeholder="Flow name"
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
           style={{
-            marginTop: 16,
-            width: "100%",
-            padding: "8px 10px",
-            borderRadius: 6,
+            borderRadius: 7,
+            border: `1.3px solid ${colors.border}`,
+            padding: "6px 10px",
+            fontSize: 15,
+            flex: 1,
+          }}
+        />
+        <input
+          type="text"
+          placeholder="Description"
+          value={newDesc}
+          onChange={e => setNewDesc(e.target.value)}
+          style={{
+            borderRadius: 7,
+            border: `1.3px solid ${colors.border}`,
+            padding: "6px 10px",
+            fontSize: 15,
+            flex: 2,
+          }}
+        />
+        <button
+          onClick={createFlow}
+          disabled={saving}
+          style={{
             background: colors.red,
             color: "#fff",
             border: "none",
+            borderRadius: 8,
+            padding: "7px 16px",
+            fontWeight: "bold",
+            fontSize: 15,
             cursor: "pointer",
-            fontWeight: 600,
+            opacity: saving ? 0.6 : 1,
           }}
         >
-          + New Flow
+          Add Flow
         </button>
-      </aside>
+      </div>
 
-      {/* Main Canvas */}
-      <section
-        style={{
-          flex: 1,
-          background: colors.card,
-          borderRadius: 8,
-          padding: 24,
-          boxShadow: darkMode ? "0 2px 8px #0004" : "0 2px 8px #0001",
-          overflow: "auto",
-        }}
-      >
-        {!selectedFlow ? (
-          <div style={{ color: colors.sub }}>
-            Select a flow from the left or create a new one.
+      {/* Canvas placeholder */}
+      {selectedFlow && (
+        <div style={{ marginTop: 48 }}>
+          <h3 style={{ color: colors.red, fontWeight: 700, margin: "6px 0 14px 0" }}>
+            {selectedFlow.name}
+          </h3>
+          <div
+            style={{
+              height: 300,
+              background: colors.card,
+              border: `2px dashed ${colors.border}`,
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: colors.sub,
+            }}
+          >
+            {/* Future flow‐builder canvas goes here */}
+            Canvas for “{selectedFlow.name}”
           </div>
-        ) : (
-          <>
-            <h2 style={{ marginTop: 0, color: colors.text }}>{selectedFlow.name}</h2>
-            <p style={{ color: colors.sub }}>{selectedFlow.description}</p>
-            <div
-              style={{
-                marginTop: 24,
-                border: `2px dashed ${colors.border}`,
-                borderRadius: 6,
-                height: 400,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: colors.sub,
-              }}
-            >
-              {/* Placeholder for drag-and-drop flow builder canvas */}
-              Canvas goes here
-            </div>
-          </>
-        )}
-      </section>
+        </div>
+      )}
     </div>
   );
 }
