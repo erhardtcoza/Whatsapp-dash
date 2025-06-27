@@ -50,7 +50,7 @@ export default function Sidebar({
       flexDirection: "column", position: "fixed", left: 0, top: 0, zIndex: 20
     }}>
       <div style={{ padding: "0 12px 18px 22px" }}>
-        <img src={vinetLogo} alt="Vinet" style={{ width: 80, marginBottom: 6 }} />
+        <img src={vinetLogo} alt="Vinet" style={{ width: 160, marginBottom: 6 }} />
       </div>
       {menuItems.map((item, idx) =>
         item ? (
