@@ -1,30 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
 
 export default function AllChatsPage({ colors }: any) {
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. Load all customers with session count
+  // Load customers
   useEffect(() => {
-    setLoading(true);
     fetch(`${API_BASE}/api/all-customers-with-sessions`)
       .then(r => r.json())
-      .then(data => {
-        setCustomers(data);
-        setLoading(false);
-      });
+      .then(setCustomers);
   }, []);
 
-  // 2. When a customer is selected, load their sessions
+  // Load sessions when customer is selected
   useEffect(() => {
+    setSelectedSession(null);
+    setMessages([]);
     if (!selectedCustomer) return;
     fetch(`${API_BASE}/api/chat-sessions?phone=${selectedCustomer.phone}`)
       .then(r => r.json())
       .then(setSessions);
   }, [selectedCustomer]);
+
+  // Load messages for a session
+  useEffect(() => {
+    setMessages([]);
+    if (!selectedSession || !selectedCustomer) return;
+    fetch(`${API_BASE}/api/messages?phone=${selectedCustomer.phone}`)
+      .then(r => r.json())
+      .then(msgs => {
+        // filter to only messages in this session
+        const filtered = msgs.filter(
+          m =>
+            m.timestamp >= selectedSession.start_ts &&
+            (selectedSession.end_ts === null || m.timestamp <= selectedSession.end_ts)
+        );
+        setMessages(filtered);
+        setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
+      });
+  }, [selectedSession, selectedCustomer]);
 
   return (
     <div style={{ display: "flex", padding: 32, gap: 32 }}>
@@ -40,13 +58,7 @@ export default function AllChatsPage({ colors }: any) {
           overflowY: "auto",
           border: `1px solid ${colors.border}`,
         }}>
-          {loading && (
-            <div style={{ padding: 20, color: colors.sub }}>Loading...</div>
-          )}
-          {!loading && customers.length === 0 && (
-            <div style={{ padding: 20, color: colors.sub }}>No customers found</div>
-          )}
-          {!loading && customers.map(cust => (
+          {customers.map(cust => (
             <div
               key={cust.phone}
               onClick={() => setSelectedCustomer(cust)}
@@ -71,7 +83,7 @@ export default function AllChatsPage({ colors }: any) {
         </div>
       </div>
 
-      {/* SESSION LIST FOR SELECTED CUSTOMER */}
+      {/* SESSION LIST */}
       <div style={{
         flex: 1,
         background: colors.card,
@@ -100,7 +112,15 @@ export default function AllChatsPage({ colors }: any) {
                 </thead>
                 <tbody>
                   {sessions.map(sess => (
-                    <tr key={sess.ticket}>
+                    <tr
+                      key={sess.ticket}
+                      style={{
+                        background: selectedSession?.ticket === sess.ticket ? colors.sidebarSel : undefined,
+                        color: selectedSession?.ticket === sess.ticket ? "#fff" : undefined,
+                        cursor: "pointer"
+                      }}
+                      onClick={() => setSelectedSession(sess)}
+                    >
                       <td>{sess.ticket}</td>
                       <td>{sess.department}</td>
                       <td>{new Date(sess.start_ts).toLocaleString()}</td>
@@ -109,6 +129,56 @@ export default function AllChatsPage({ colors }: any) {
                   ))}
                 </tbody>
               </table>
+            )}
+            {/* SESSION CHAT VIEW */}
+            {selectedSession && (
+              <div style={{
+                marginTop: 32,
+                padding: 18,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 8,
+                background: "#fafbfc",
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: 10 }}>
+                  Session: {selectedSession.ticket}
+                  <span style={{
+                    color: selectedSession.end_ts ? colors.sub : "green",
+                    marginLeft: 16,
+                    fontSize: 13
+                  }}>
+                    {selectedSession.end_ts ? "Closed" : "Open"}
+                  </span>
+                </div>
+                <div
+                  ref={scrollRef}
+                  style={{ maxHeight: 250, overflowY: "auto", marginBottom: 10 }}
+                >
+                  {messages.map(m => (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <div style={{
+                        background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
+                        color: m.direction === "outgoing" ? "#fff" : colors.text,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        maxWidth: "70%",
+                        wordBreak: "break-word",
+                      }}>
+                        {m.body}
+                      </div>
+                    </div>
+                  ))}
+                  {messages.length === 0 && (
+                    <div style={{ color: colors.sub }}>No messages in this session.</div>
+                  )}
+                </div>
+              </div>
             )}
           </>
         ) : (
