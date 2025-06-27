@@ -17,11 +17,13 @@ export default function ChatPanel({
   contact,
   colors,
   onCloseChat,
+  prefillMsg, // new optional prop
 }: {
   phone?: string;
   contact?: any;
   colors: any;
   onCloseChat: () => void;
+  prefillMsg?: string;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
@@ -37,6 +39,13 @@ export default function ChatPanel({
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [phone]);
+
+  // Prefill logic
+  useEffect(() => {
+    if (typeof prefillMsg === "string" && prefillMsg && phone) {
+      setNewMsg(prefillMsg);
+    }
+  }, [prefillMsg, phone]);
 
   // scroll to bottom on new messages
   useEffect(() => {
