@@ -1,271 +1,166 @@
-// src/AccountsPage.tsx
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
 
-interface Message {
-  id: number;
-  from_number: string;
-  body: string;
-  direction: "incoming" | "outgoing";
-  timestamp: number;
-  media_url?: string;
-  location_json?: string;
-}
+export default function AccountsPage({ colors, darkMode }: any) {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [reply, setReply] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-interface ChatSummary {
-  from_number: string;
-  name: string;
-  email: string;
-  customer_id: string;
-  last_ts: number;
-  last_message: string;
-}
-
-export default function AccountsPage({ colors }: any) {
-  const [chats, setChats] = useState<ChatSummary[]>([]);
-  const [selected, setSelected] = useState<ChatSummary | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [loadingMsgs, setLoadingMsgs] = useState(false);
-  const [sending, setSending] = useState(false);
-
-  // 1) load open accounts chats
+  // fetch open account sessions
   useEffect(() => {
-    fetchAccountsChats();
+    fetch(`${API_BASE}/api/accounts-chats`)
+      .then((r) => r.json())
+      .then(setSessions);
   }, []);
 
-  async function fetchAccountsChats() {
-    setLoadingChats(true);
-    const res = await fetch(`${API_BASE}/api/accounts-chats`);
-    const data = await res.json();
-    setChats(data);
-    setLoadingChats(false);
-  }
-
-  // 2) when you select a chat, load its messages
+  // when you select a session, load its messages
   useEffect(() => {
-    if (!selected) return;
-    loadMessages(selected.from_number);
-  }, [selected]);
+    if (!selectedPhone) return;
+    fetch(`${API_BASE}/api/messages?phone=${selectedPhone}`)
+      .then((r) => r.json())
+      .then((msgs) => {
+        setMessages(msgs);
+        // scroll to bottom after a tick
+        setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
+      });
+  }, [selectedPhone]);
 
-  async function loadMessages(phone: string) {
-    setLoadingMsgs(true);
-    const res = await fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(phone)}`);
-    const msgs = await res.json();
-    setMessages(msgs);
-    setLoadingMsgs(false);
-  }
-
-  // 3) send a new message
-  async function sendMessage() {
-    if (!selected || !input.trim()) return;
-    setSending(true);
+  // send a reply
+  async function sendReply() {
+    if (!selectedPhone || !reply.trim()) return;
     await fetch(`${API_BASE}/api/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selected.from_number, body: input.trim() }),
+      body: JSON.stringify({ phone: selectedPhone, body: reply.trim() }),
     });
-    setInput("");
-    await loadMessages(selected.from_number);
-    setSending(false);
+    setReply("");
+    // reload
+    const r = await fetch(`${API_BASE}/api/messages?phone=${selectedPhone}`);
+    const msgs = await r.json();
+    setMessages(msgs);
+    setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
   }
 
-  // 4) close this chat session
-  async function closeChat() {
-    if (!selected) return;
-    await fetch(`${API_BASE}/api/close-chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selected.from_number }),
-    });
-    // go back to list and refresh
-    setSelected(null);
-    fetchAccountsChats();
-  }
-
-  // --- layout ---
   return (
-    <div style={{ display: "flex", height: "100%" }}>
-      {/* Chat list sidebar */}
-      <div style={{
-        width: 280,
-        borderRight: `1px solid ${colors.border}`,
-        padding: 16,
-        overflowY: "auto",
-        background: colors.sidebar
-      }}>
-        <h3 style={{ margin: "0 0 12px", color: colors.text }}>Accounts Chats</h3>
-        {loadingChats ? (
-          <div style={{ color: colors.sub }}>Loading…</div>
-        ) : chats.length === 0 ? (
-          <div style={{ color: colors.sub }}>No open accounts chats</div>
-        ) : (
-          chats.map(chat => (
+    <div style={{ display: "flex", padding: 32, gap: 32 }}>
+      {/* Sidebar list of open sessions */}
+      <div style={{ width: 280 }}>
+        <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 12 }}>
+          Open Accounts Sessions
+        </h3>
+        <div style={{
+          background: colors.card,
+          borderRadius: 8,
+          maxHeight: "75vh",
+          overflowY: "auto",
+          border: `1px solid ${colors.border}`,
+        }}>
+          {sessions.map((s) => (
             <div
-              key={chat.from_number}
-              onClick={() => setSelected(chat)}
+              key={s.from_number}
+              onClick={() => setSelectedPhone(s.from_number)}
               style={{
-                padding: "8px 12px",
-                marginBottom: 8,
-                background: selected?.from_number === chat.from_number
-                  ? colors.red : colors.card,
-                color: selected?.from_number === chat.from_number
-                  ? "#fff" : colors.text,
-                borderRadius: 6,
+                padding: "10px 14px",
                 cursor: "pointer",
+                background: selectedPhone === s.from_number ? colors.sidebarSel : "none",
+                color: selectedPhone === s.from_number ? "#fff" : colors.text,
+                borderBottom: `1px solid ${colors.border}`,
               }}
             >
-              <div style={{ fontWeight: 600 }}>{chat.name || chat.from_number}</div>
-              <div style={{ fontSize: 12, color: colors.sub, marginTop: 2 }}>
-                {chat.last_message}
+              <div style={{ fontWeight: 600 }}>{s.customer_id} – {s.name || "No Name"}</div>
+              <div style={{ fontSize: 13, color: colors.sub }}>
+                {s.from_number} · Last: {new Date(s.last_ts).toLocaleString()}
               </div>
             </div>
-          ))
-        )}
+          ))}
+          {sessions.length === 0 && (
+            <div style={{ padding: 20, color: colors.sub }}>No open sessions</div>
+          )}
+        </div>
       </div>
 
       {/* Chat window */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {selected ? (
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        background: colors.card,
+        borderRadius: 8,
+        border: `1px solid ${colors.border}`,
+        overflow: "hidden",
+      }}>
+        {selectedPhone ? (
           <>
-            {/* header */}
-            <div style={{
-              padding: "12px 16px",
-              borderBottom: `1px solid ${colors.border}`,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
-                <strong>{selected.name || selected.from_number}</strong><br/>
-                <small style={{ color: colors.sub }}>{selected.email}</small>
-              </div>
-              <div>
-                <button
-                  onClick={() => setSelected(null)}
+            {/* Messages */}
+            <div
+              ref={scrollRef}
+              style={{ flex: 1, padding: 16, overflowY: "auto" }}
+            >
+              {messages.map((m: any) => (
+                <div
+                  key={m.id}
                   style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 18,
-                    cursor: "pointer",
-                    marginRight: 12,
-                    color: colors.sub
+                    display: "flex",
+                    justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start",
+                    marginBottom: 8,
                   }}
                 >
-                  ✕
-                </button>
-                <button
-                  onClick={closeChat}
-                  style={{
-                    background: colors.red,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "6px 12px",
-                    cursor: "pointer"
-                  }}
-                >
-                  Close Session
-                </button>
-              </div>
-            </div>
-
-            {/* message list */}
-            <div style={{
-              flex: 1,
-              padding: 16,
-              overflowY: "auto",
-              background: colors.bg
-            }}>
-              {loadingMsgs ? (
-                <div style={{ color: colors.sub }}>Loading messages…</div>
-              ) : messages.length === 0 ? (
-                <div style={{ color: colors.sub }}>No messages yet</div>
-              ) : (
-                messages.map(msg => (
-                  <div
-                    key={msg.id}
-                    style={{
-                      marginBottom: 12,
-                      textAlign: msg.direction === "outgoing" ? "right" : "left"
-                    }}
-                  >
-                    <div style={{
-                      display: "inline-block",
-                      background: msg.direction === "outgoing"
-                        ? colors.msgOut : colors.card,
-                      color: msg.direction === "outgoing" ? "#fff" : colors.text,
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      maxWidth: "70%",
-                      wordBreak: "break-word"
-                    }}>
-                      {msg.body}
-                      {msg.media_url && (
-                        <div style={{ marginTop: 6 }}>
-                          <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
-                            [View Media]
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 10, color: colors.sub, marginTop: 2 }}>
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </div>
+                  <div style={{
+                    background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
+                    color: m.direction === "outgoing" ? "#fff" : colors.text,
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    maxWidth: "70%",
+                    wordBreak: "break-word",
+                  }}>
+                    {m.body}
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
 
-            {/* input box */}
+            {/* Reply box */}
             <div style={{
-              padding: 16,
               borderTop: `1px solid ${colors.border}`,
+              padding: 12,
               display: "flex",
               gap: 8,
             }}>
               <input
-                type="text"
-                value={input}
-                placeholder="Type your message…"
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && sendMessage()}
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                placeholder="Type your reply…"
                 style={{
                   flex: 1,
                   borderRadius: 6,
                   border: `1px solid ${colors.border}`,
                   padding: "8px 12px",
-                  fontSize: 14,
                   background: colors.input,
-                  color: colors.inputText
+                  color: colors.inputText,
+                  fontSize: 14,
                 }}
-                disabled={sending}
               />
               <button
-                onClick={sendMessage}
+                onClick={sendReply}
                 style={{
                   background: colors.red,
                   color: "#fff",
                   border: "none",
                   borderRadius: 6,
                   padding: "8px 16px",
-                  cursor: "pointer"
+                  fontWeight: 700,
+                  cursor: "pointer",
                 }}
-                disabled={sending}
-              >Send</button>
+              >
+                Send
+              </button>
             </div>
           </>
         ) : (
-          <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: colors.sub
-          }}>
-            Select a chat from the left to open it.
+          <div style={{ padding: 40, color: colors.sub }}>
+            Select a session to view and interact.
           </div>
         )}
       </div>
