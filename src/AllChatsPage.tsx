@@ -7,6 +7,8 @@ export default function AllChatsPage({ colors }: any) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const [reply, setReply] = useState("");
+  const [closing, setClosing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Load customers
@@ -43,6 +45,50 @@ export default function AllChatsPage({ colors }: any) {
         setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
       });
   }, [selectedSession, selectedCustomer]);
+
+  // Send reply to this session
+  async function sendReply() {
+    if (!selectedSession || !selectedCustomer || !reply.trim()) return;
+    await fetch(`${API_BASE}/api/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: selectedCustomer.phone, body: reply.trim() }),
+    });
+    setReply("");
+    // Reload messages
+    fetch(`${API_BASE}/api/messages?phone=${selectedCustomer.phone}`)
+      .then(r => r.json())
+      .then(msgs => {
+        const filtered = msgs.filter(
+          m =>
+            m.timestamp >= selectedSession.start_ts &&
+            (selectedSession.end_ts === null || m.timestamp <= selectedSession.end_ts)
+        );
+        setMessages(filtered);
+        setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
+      });
+  }
+
+  // Close session
+  async function closeSession() {
+    if (!selectedSession) return;
+    setClosing(true);
+    await fetch(`${API_BASE}/api/close-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket: selectedSession.ticket }),
+    });
+    // Optionally send "session closed" message here if not already handled by backend
+    setSelectedSession({
+      ...selectedSession,
+      end_ts: Date.now(),
+    });
+    // Refresh sessions
+    fetch(`${API_BASE}/api/chat-sessions?phone=${selectedCustomer.phone}`)
+      .then(r => r.json())
+      .then(setSessions);
+    setClosing(false);
+  }
 
   return (
     <div style={{ display: "flex", padding: 32, gap: 32 }}>
@@ -83,7 +129,7 @@ export default function AllChatsPage({ colors }: any) {
         </div>
       </div>
 
-      {/* SESSION LIST */}
+      {/* SESSION LIST & CHAT */}
       <div style={{
         flex: 1,
         background: colors.card,
@@ -101,7 +147,7 @@ export default function AllChatsPage({ colors }: any) {
             {sessions.length === 0 ? (
               <div style={{ color: colors.sub }}>No sessions for this customer.</div>
             ) : (
-              <table style={{ width: "100%" }}>
+              <table style={{ width: "100%", marginBottom: 18 }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left" }}>Ticket</th>
@@ -133,21 +179,44 @@ export default function AllChatsPage({ colors }: any) {
             {/* SESSION CHAT VIEW */}
             {selectedSession && (
               <div style={{
-                marginTop: 32,
+                marginTop: 12,
                 padding: 18,
                 border: `1px solid ${colors.border}`,
                 borderRadius: 8,
                 background: "#fafbfc",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 220,
               }}>
-                <div style={{ fontWeight: 600, marginBottom: 10 }}>
-                  Session: {selectedSession.ticket}
-                  <span style={{
-                    color: selectedSession.end_ts ? colors.sub : "green",
-                    marginLeft: 16,
-                    fontSize: 13
-                  }}>
-                    {selectedSession.end_ts ? "Closed" : "Open"}
-                  </span>
+                <div style={{ fontWeight: 600, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    Session: {selectedSession.ticket}
+                    <span style={{
+                      color: selectedSession.end_ts ? colors.sub : "green",
+                      marginLeft: 16,
+                      fontSize: 13
+                    }}>
+                      {selectedSession.end_ts ? "Closed" : "Open"}
+                    </span>
+                  </div>
+                  {selectedSession.end_ts === null && (
+                    <button
+                      style={{
+                        background: colors.red,
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "6px 14px",
+                        fontWeight: 600,
+                        cursor: closing ? "wait" : "pointer",
+                        opacity: closing ? 0.7 : 1,
+                      }}
+                      onClick={closeSession}
+                      disabled={closing}
+                    >
+                      Close Session
+                    </button>
+                  )}
                 </div>
                 <div
                   ref={scrollRef}
@@ -178,6 +247,46 @@ export default function AllChatsPage({ colors }: any) {
                     <div style={{ color: colors.sub }}>No messages in this session.</div>
                   )}
                 </div>
+                {/* Reply input (only for open sessions) */}
+                {selectedSession.end_ts === null && (
+                  <div style={{
+                    borderTop: `1px solid ${colors.border}`,
+                    padding: 8,
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                  }}>
+                    <input
+                      value={reply}
+                      onChange={e => setReply(e.target.value)}
+                      placeholder="Type your reply…"
+                      style={{
+                        flex: 1,
+                        borderRadius: 6,
+                        border: `1px solid ${colors.border}`,
+                        padding: "8px 12px",
+                        background: colors.input,
+                        color: colors.inputText,
+                        fontSize: 14,
+                      }}
+                      onKeyDown={e => { if (e.key === "Enter") sendReply(); }}
+                    />
+                    <button
+                      onClick={sendReply}
+                      style={{
+                        background: colors.red,
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "8px 16px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Send
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>
