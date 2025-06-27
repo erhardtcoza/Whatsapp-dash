@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
 
-export default function AccountsPage({ colors, darkMode }: any) {
+export default function AccountsPage({ colors }: any) {
   const [sessions, setSessions] = useState<any[]>([]);
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
