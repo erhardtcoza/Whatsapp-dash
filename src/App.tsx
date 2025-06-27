@@ -12,20 +12,22 @@ import AutoResponsePage from "./AutoResponsePage";
 import OfficeHoursPage from "./OfficeHoursPage";
 import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
+import SendMessagePage from "./SendMessagePage";  // ← import it!
 import "./App.css";
 
 const SECTION_TITLES: Record<string, string> = {
-  unlinked: "Unlinked Clients",
-  allchats: "All Chats",
-  support: "Support",
-  accounts: "Accounts",
-  sales: "Sales",
-  leads: "Leads",
-  broadcast: "Broadcast",
-  autoresp: "Auto Response",
-  office: "Office Hours Management",
-  system: "System",
-  adduser: "Add User"
+  unlinked:   "Unlinked Clients",
+  allchats:   "All Chats",
+  support:    "Support",
+  accounts:   "Accounts",
+  sales:      "Sales",
+  leads:      "Leads",
+  broadcast:  "Broadcast",
+  autoresp:   "Auto Response",
+  office:     "Office Hours Management",
+  system:     "System",
+  send:       "Send Message",        // ← new
+  adduser:    "Add User",
 };
 
 export default function App() {
@@ -73,9 +75,7 @@ export default function App() {
     localStorage.removeItem("wa-user");
   }
 
-  if (!user) {
-    return <Login onLogin={handleLoginSuccess} colors={c} />;
-  }
+  if (!user) return <Login onLogin={handleLoginSuccess} colors={c} />;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: c.bg }}>
@@ -119,23 +119,22 @@ export default function App() {
           </div>
           <div style={{ padding: "0 40px", flex: 1 }}>
             {{
-              unlinked: <UnlinkedClientsPage colors={c} darkMode={darkMode} />,
-              allchats: <AllChatsPage colors={c} darkMode={darkMode} />,
-              support: <SupportPage colors={c} darkMode={darkMode} />,
-              accounts: <AccountsPage colors={c} darkMode={darkMode} />,
-              sales: <SalesPage colors={c} darkMode={darkMode} />,
-              leads: <LeadsPage colors={c} darkMode={darkMode} />,
-              broadcast: <BroadcastPage colors={c} darkMode={darkMode} />,
-              autoresp: <AutoResponsePage colors={c} />,
-              office: <OfficeHoursPage colors={c} />,
-              system: <SystemPage colors={c} />,
+              unlinked:  <UnlinkedClientsPage colors={c} darkMode={darkMode} />,
+              allchats:  <AllChatsPage         colors={c} darkMode={darkMode} />,
+              support:   <SupportPage          colors={c} darkMode={darkMode} />,
+              accounts:  <AccountsPage         colors={c} darkMode={darkMode} />,
+              sales:     <SalesPage            colors={c} darkMode={darkMode} />,
+              leads:     <LeadsPage            colors={c} darkMode={darkMode} />,
+              broadcast: <BroadcastPage        colors={c} darkMode={darkMode} />,
+              autoresp:  <AutoResponsePage     colors={c} />,
+              office:    <OfficeHoursPage      colors={c} />,
+              system:    <SystemPage           colors={c} />,
+              send:      <SendMessagePage      colors={c} />,  // ← new
               adduser: user.role === "admin"
                 ? <AddUserPage colors={c} />
-                : (
-                  <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
+                : <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
                     You do not have access to this section.
                   </div>
-                )
             }[section] || (
               <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
                 Invalid section
