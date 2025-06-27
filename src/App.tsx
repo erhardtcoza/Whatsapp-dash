@@ -12,7 +12,8 @@ import AutoResponsePage from "./AutoResponsePage";
 import OfficeHoursPage from "./OfficeHoursPage";
 import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
-import SendMessagePage from "./SendMessagePage";  // ← import it!
+import SendMessagePage from "./SendMessagePage";
+import ChatPanel from "./ChatPanel"; // <-- Import ChatPanel!
 import "./App.css";
 
 const SECTION_TITLES: Record<string, string> = {
@@ -26,7 +27,7 @@ const SECTION_TITLES: Record<string, string> = {
   autoresp:   "Auto Response",
   office:     "Office Hours Management",
   system:     "System",
-  send:       "Send Message",        // ← new
+  send:       "Send Message",
   adduser:    "Add User",
 };
 
@@ -46,6 +47,23 @@ export default function App() {
 
   const [section, setSection] = useState("unlinked");
   const [search, setSearch] = useState("");
+
+  // --- ChatPanel integration ---
+  const [selectedChatPhone, setSelectedChatPhone] = useState<string | null>(null);
+  const [selectedContact, setSelectedContact] = useState<any | null>(null);
+  const [prefillMsg, setPrefillMsg] = useState<string | undefined>("");
+
+  function handleOpenChat(phone: string, msg?: string, contact?: any) {
+    setSelectedChatPhone(phone);
+    setPrefillMsg(msg || "");
+    setSelectedContact(contact || null);
+  }
+
+  function handleCloseChat() {
+    setSelectedChatPhone(null);
+    setPrefillMsg("");
+    setSelectedContact(null);
+  }
 
   const c = darkMode
     ? {
@@ -119,7 +137,11 @@ export default function App() {
           </div>
           <div style={{ padding: "0 40px", flex: 1 }}>
             {{
-              unlinked:  <UnlinkedClientsPage colors={c} darkMode={darkMode} />,
+              unlinked:  <UnlinkedClientsPage
+                            colors={c}
+                            darkMode={darkMode}
+                            onOpenChat={(phone: string, msg?: string, contact?: any) => handleOpenChat(phone, msg, contact)}
+                          />,
               allchats:  <AllChatsPage         colors={c} darkMode={darkMode} />,
               support:   <SupportPage          colors={c} darkMode={darkMode} />,
               accounts:  <AccountsPage         colors={c} darkMode={darkMode} />,
@@ -129,7 +151,7 @@ export default function App() {
               autoresp:  <AutoResponsePage     colors={c} />,
               office:    <OfficeHoursPage      colors={c} />,
               system:    <SystemPage           colors={c} />,
-              send:      <SendMessagePage      colors={c} />,  // ← new
+              send:      <SendMessagePage      colors={c} />,
               adduser: user.role === "admin"
                 ? <AddUserPage colors={c} />
                 : <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
@@ -142,6 +164,40 @@ export default function App() {
             )}
           </div>
         </div>
+        {/* Overlay ChatPanel if selected */}
+        {selectedChatPhone && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "#0008",
+            zIndex: 1200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <div style={{
+              width: 600,
+              height: 700,
+              background: c.card,
+              borderRadius: 14,
+              boxShadow: "0 2px 30px #0003",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column"
+            }}>
+              <ChatPanel
+                phone={selectedChatPhone}
+                contact={selectedContact}
+                colors={c}
+                onCloseChat={handleCloseChat}
+                prefillMsg={prefillMsg}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
