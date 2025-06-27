@@ -24,8 +24,8 @@ export default function SendMessagePage({ colors }: { colors: any }) {
     email: "",
     customer_id: "",
   });
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // fetch active chats
   useEffect(() => {
     fetch(`${API_BASE}/api/chats`)
       .then((r) => r.json())
@@ -36,6 +36,11 @@ export default function SendMessagePage({ colors }: { colors: any }) {
       .catch(console.error);
   }, []);
 
+  const filtered = clients.filter(c =>
+    c.from_number.includes(searchTerm) ||
+    (c.customer_id || "").includes(searchTerm)
+  );
+
   async function send() {
     if (!selectedPhone || !message.trim()) return;
     await fetch(`${API_BASE}/api/send-message`, {
@@ -44,7 +49,6 @@ export default function SendMessagePage({ colors }: { colors: any }) {
       body: JSON.stringify({ phone: selectedPhone, body: message }),
     });
     setMessage("");
-    // optionally refresh chats/unread state...
   }
 
   async function addCustomer(e: React.FormEvent) {
@@ -56,8 +60,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, name, email, customer_id }),
     });
-    // after adding, re-fetch chats
-    const data = await fetch(`${API_BASE}/api/chats`).then((r) => r.json());
+    const data = await fetch(`${API_BASE}/api/chats`).then(r => r.json());
     setClients(data);
     setSelectedPhone(phone);
     setAdding(false);
@@ -69,15 +72,28 @@ export default function SendMessagePage({ colors }: { colors: any }) {
         Send Message
       </h2>
 
-      <div style={{ marginBottom: 24 }}>
-        <label style={{ display: "block", marginBottom: 6, color: colors.sub }}>
-          Select Client
-        </label>
+      {/* Search + Dropdown */}
+      <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
+        <input
+          type="text"
+          placeholder="Search by phone or ID…"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{
+            padding: "7px 12px",
+            borderRadius: 6,
+            border: `1.3px solid ${colors.border}`,
+            fontSize: 15,
+            width: 240,
+            background: colors.input,
+            color: colors.inputText,
+          }}
+        />
         <select
           value={selectedPhone}
-          onChange={(e) => setSelectedPhone(e.target.value)}
+          onChange={e => setSelectedPhone(e.target.value)}
           style={{
-            width: 300,
+            flex: 1,
             padding: "7px 12px",
             borderRadius: 6,
             border: `1.3px solid ${colors.border}`,
@@ -86,16 +102,15 @@ export default function SendMessagePage({ colors }: { colors: any }) {
             color: colors.inputText,
           }}
         >
-          {clients.map((c) => (
+          {filtered.map(c => (
             <option key={c.from_number} value={c.from_number}>
-              {c.name || c.from_number} — {c.last_message.slice(0, 20)}…
+              [{c.customer_id || "—"}] {c.name || c.from_number} — {c.last_message.slice(0, 20)}…
             </option>
           ))}
         </select>
         <button
-          onClick={() => setAdding((f) => !f)}
+          onClick={() => setAdding(f => !f)}
           style={{
-            marginLeft: 12,
             background: colors.red,
             color: "#fff",
             border: "none",
@@ -110,13 +125,14 @@ export default function SendMessagePage({ colors }: { colors: any }) {
         </button>
       </div>
 
+      {/* Add Customer Form */}
       {adding && (
         <form onSubmit={addCustomer} style={{ marginBottom: 24, display: "grid", gap: 10, width: 300 }}>
           <input
             type="text"
             placeholder="Phone"
             value={newCustomer.phone}
-            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+            onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
             style={{
               padding: "7px 12px",
               borderRadius: 6,
@@ -129,7 +145,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
             type="text"
             placeholder="Name"
             value={newCustomer.name}
-            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+            onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
             style={{
               padding: "7px 12px",
               borderRadius: 6,
@@ -141,7 +157,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
             type="email"
             placeholder="Email"
             value={newCustomer.email}
-            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+            onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
             style={{
               padding: "7px 12px",
               borderRadius: 6,
@@ -153,7 +169,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
             type="text"
             placeholder="Customer ID"
             value={newCustomer.customer_id}
-            onChange={(e) => setNewCustomer({ ...newCustomer, customer_id: e.target.value })}
+            onChange={e => setNewCustomer({ ...newCustomer, customer_id: e.target.value })}
             style={{
               padding: "7px 12px",
               borderRadius: 6,
@@ -179,14 +195,13 @@ export default function SendMessagePage({ colors }: { colors: any }) {
         </form>
       )}
 
+      {/* Message Composer */}
       <div style={{ marginBottom: 12 }}>
-        <label style={{ display: "block", marginBottom: 6, color: colors.sub }}>
-          Message
-        </label>
         <textarea
           rows={4}
+          placeholder="Type your message…"
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={e => setMessage(e.target.value)}
           style={{
             width: "100%",
             maxWidth: 500,
