@@ -67,12 +67,8 @@ export default function SendMessagePage({ colors }: { colors: any }) {
   }
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
-        Send Message
-      </h2>
-
-      {/* Search + Dropdown */}
+    <div style={{ padding: 32, width: "100%", boxSizing: "border-box" }}>
+      {/* --- Search + Client selector --- */}
       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
         <input
           type="text"
@@ -104,7 +100,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
         >
           {filtered.map(c => (
             <option key={c.from_number} value={c.from_number}>
-              [{c.customer_id || "—"}] {c.name || c.from_number} — {c.last_message.slice(0, 20)}…
+              [{c.customer_id || "—"}] {c.from_number}
             </option>
           ))}
         </select>
@@ -125,9 +121,9 @@ export default function SendMessagePage({ colors }: { colors: any }) {
         </button>
       </div>
 
-      {/* Add Customer Form */}
+      {/* --- Add Customer Form --- */}
       {adding && (
-        <form onSubmit={addCustomer} style={{ marginBottom: 24, display: "grid", gap: 10, width: 300 }}>
+        <form onSubmit={addCustomer} style={{ marginBottom: 24, display: "grid", gap: 10, maxWidth: 360 }}>
           <input
             type="text"
             placeholder="Phone"
@@ -195,7 +191,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
         </form>
       )}
 
-      {/* Message Composer */}
+      {/* --- Message Composer --- */}
       <div style={{ marginBottom: 12 }}>
         <textarea
           rows={4}
@@ -204,7 +200,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
           onChange={e => setMessage(e.target.value)}
           style={{
             width: "100%",
-            maxWidth: 500,
+            maxWidth: 600,
             padding: "7px 12px",
             borderRadius: 6,
             border: `1.3px solid ${colors.border}`,
@@ -214,6 +210,7 @@ export default function SendMessagePage({ colors }: { colors: any }) {
           }}
         />
       </div>
+
       <button
         onClick={send}
         style={{
