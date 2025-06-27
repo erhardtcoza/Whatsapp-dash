@@ -5,199 +5,251 @@ import { API_BASE } from "./config";
 interface ChatSummary {
   from_number: string;
   name: string;
-  customer_id: number;
+  customer_id: string;
   last_ts: number;
   last_message: string;
   unread_count: number;
   tag: string;
 }
 
+interface Session {
+  id: number;
+  ticket: string;
+  department: string;
+  start_ts: number;
+  end_ts: number | null;
+}
+
 interface Message {
   id: number;
   from_number: string;
   body: string;
-  tag: string;
-  timestamp: number;
   direction: "incoming" | "outgoing";
-  media_url?: string;
-  location_json?: string;
-  closed?: number;
+  timestamp: number;
+  media_url: string | null;
+  location_json: string | null;
+  tag: string;
 }
 
-// Utility to group messages into sessions
-function groupIntoSessions(msgs: Message[]): { sessionId: number; messages: Message[] }[] {
-  if (!msgs.length) return [];
-  const sessions: { sessionId: number; messages: Message[] }[] = [];
-  let currentSession: Message[] = [];
-  let sessionCounter = 1;
+export default function AllChatsPage({ colors }: any) {
+  const [chats, setChats] = useState<ChatSummary[]>([]);
+  const [selectedChat, setSelectedChat] = useState<ChatSummary | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [reply, setReply] = useState("");
 
-  for (let m of msgs) {
-    currentSession.push(m);
-    // whenever you hit a closed marker (closed===1 on outgoing admin message), end session
-    if (m.direction === "outgoing" && m.body.includes("🔒 Your chat has been closed")) {
-      sessions.push({ sessionId: sessionCounter++, messages: currentSession });
-      currentSession = [];
-    }
-  }
-  // leftover
-  if (currentSession.length) {
-    sessions.push({ sessionId: sessionCounter++, messages: currentSession });
-  }
-  return sessions;
-}
+  // 1) Load all open chats
+  useEffect(() => {
+    fetch(`${API_BASE}/api/chats`)
+      .then(r => r.json())
+      .then(setChats)
+      .catch(console.error);
+  }, []);
 
-export default function AllChatsPage({ colors, darkMode }: any) {
-  const [chats, setChats]               = useState<ChatSummary[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [modalOpen, setModalOpen]       = useState(false);
-  const [modalCustomer, setModalCustomer] = useState<ChatSummary | null>(null);
-  const [sessions, setSessions]         = useState<{ sessionId: number; messages: Message[] }[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(false);
+  // 2) When a chat is selected, load its sessions
+  useEffect(() => {
+    if (!selectedChat) return;
+    fetch(`${API_BASE}/api/chat-sessions?phone=${encodeURIComponent(selectedChat.from_number)}`)
+      .then(r => r.json())
+      .then((ss: Session[]) => {
+        setSessions(ss);
+        setSelectedSession(ss[0] ?? null);
+      })
+      .catch(console.error);
+  }, [selectedChat]);
 
-  useEffect(() => { fetchChats(); }, []);
+  // 3) When either the chat or session changes, load & filter messages
+  useEffect(() => {
+    if (!selectedChat) return;
+    fetch(`${API_BASE}/api/messages?phone=${encodeURIComponent(selectedChat.from_number)}`)
+      .then(r => r.json())
+      .then((all: Message[]) => {
+        if (selectedSession) {
+          const inSession = all.filter(m =>
+            m.timestamp >= selectedSession.start_ts &&
+            (selectedSession.end_ts === null || m.timestamp <= selectedSession.end_ts)
+          );
+          setMessages(inSession);
+        } else {
+          setMessages(all);
+        }
+      })
+      .catch(console.error);
+  }, [selectedChat, selectedSession]);
 
-  async function fetchChats() {
-    setLoading(true);
-    const res = await fetch(`${API_BASE}/api/chats`);
-    const data: ChatSummary[] = await res.json();
-    setChats(data);
-    setLoading(false);
-  }
-
-  async function openModal(chat: ChatSummary) {
-    setModalCustomer(chat);
-    setModalOpen(true);
-    setLoadingSessions(true);
-
-    // fetch **all** messages for this client
-    const res = await fetch(`${API_BASE}/api/messages?phone=${chat.from_number}`);
-    const msgs: Message[] = await res.json();
-
-    // group into sessions
-    const grouped = groupIntoSessions(msgs);
-    setSessions(grouped);
-    setLoadingSessions(false);
-  }
-
-  function closeModal() {
-    setModalOpen(false);
-    setModalCustomer(null);
-    setSessions([]);
+  // 4) Send a reply into the current open session
+  async function sendReply() {
+    if (!reply.trim() || !selectedChat) return;
+    await fetch(`${API_BASE}/api/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: selectedChat.from_number, body: reply }),
+    });
+    setReply("");
+    // append immediately
+    setMessages(ms => [
+      ...ms,
+      {
+        id: 0,
+        from_number: selectedChat.from_number,
+        body: reply,
+        direction: "outgoing",
+        timestamp: Date.now(),
+        media_url: null,
+        location_json: null,
+        tag: selectedSession?.department || selectedChat.tag,
+      }
+    ]);
   }
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22 }}>
-        All Clients &amp; Sessions
-      </h2>
-
-      <table style={{
-        width: "100%",
-        background: colors.card,
-        border: `1px solid ${colors.border}`,
-        borderRadius: 8,
-        overflow: "hidden",
-      }}>
-        <thead style={{ background: darkMode ? "#2a2c31" : "#fafafa" }}>
-          <tr>
-            <th style={{ padding: 12, textAlign: "left", color: colors.sub }}>Client ID</th>
-            <th style={{ padding: 12, textAlign: "left", color: colors.sub }}>Name</th>
-            <th style={{ padding: 12, textAlign: "left", color: colors.sub }}>Phone</th>
-            <th style={{ padding: 12, textAlign: "center", color: colors.sub }}># Sessions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={4} style={{ padding: 16, color: colors.sub }}>Loading…</td></tr>
-          ) : chats.length === 0 ? (
-            <tr><td colSpan={4} style={{ padding: 16, color: colors.sub }}>No open chats.</td></tr>
-          ) : chats.map(chat => (
-            <tr key={chat.from_number}
-                onClick={() => openModal(chat)}
-                style={{ cursor: "pointer", borderBottom: `1px solid ${colors.border}` }}>
-              <td style={{ padding: 12 }}>{chat.customer_id}</td>
-              <td style={{ padding: 12 }}>{chat.name || "—"}</td>
-              <td style={{ padding: 12 }}>{chat.from_number}</td>
-              <td style={{ padding: 12, textAlign: "center" }}>
-                {/* For now, if they have any messages => “1”, else “0” */}
-                {chat.unread_count > 0 ? 1 : 0}
-              </td>
+    <div style={{ display: "flex", height: "100%", padding: 32, gap: 32 }}>
+      {/* ─── Left panel: all chats ─── */}
+      <div style={{ width: 300, overflowY: "auto" }}>
+        <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 12 }}>All Chats</h3>
+        <table style={{ width: "100%", background: colors.card, borderRadius: 8 }}>
+          <thead>
+            <tr>
+              <th style={{ padding: "8px", textAlign: "left" }}>ID</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Name</th>
+              <th style={{ padding: "8px", textAlign: "left" }}>Phone</th>
+              <th style={{ padding: "8px", textAlign: "right" }}>Unread</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* ── Modal for sessions ──────────────────────────────────────────── */}
-      {modalOpen && modalCustomer && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 999
-        }}>
-          <div style={{
-            width: "80%", maxHeight: "80%", overflowY: "auto",
-            background: colors.card, borderRadius: 8, boxShadow: "0 2px 14px #0003",
-            padding: 24
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>
-                Sessions for [{modalCustomer.customer_id}] {modalCustomer.name}
-              </h3>
-              <button
-                onClick={closeModal}
+          </thead>
+          <tbody>
+            {chats.map(c => (
+              <tr
+                key={c.from_number}
+                onClick={() => setSelectedChat(c)}
                 style={{
-                  background: "none", border: "none", fontSize: 18, cursor: "pointer"
-                }}>✕</button>
+                  cursor: "pointer",
+                  background:
+                    selectedChat?.from_number === c.from_number
+                      ? colors.input
+                      : "transparent"
+                }}
+              >
+                <td style={{ padding: "6px 8px" }}>{c.customer_id}</td>
+                <td style={{ padding: "6px 8px" }}>{c.name || "-"}</td>
+                <td style={{ padding: "6px 8px" }}>{c.from_number}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right" }}>
+                  {c.unread_count}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ─── Right panel: sessions & messages ─── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {selectedChat ? (
+          <>
+            {/* Sessions selector */}
+            <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+              <h3 style={{ color: colors.red, fontWeight: 700, margin: 0 }}>
+                Sessions for {selectedChat.customer_id} — {selectedChat.name || "-"}
+              </h3>
+              <select
+                value={selectedSession?.ticket || ""}
+                onChange={e => {
+                  const s = sessions.find(x => x.ticket === e.target.value) || null;
+                  setSelectedSession(s);
+                }}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: `1px solid ${colors.border}`,
+                  background: colors.input,
+                  color: colors.inputText
+                }}
+              >
+                {sessions.length
+                  ? sessions.map(s => (
+                      <option key={s.id} value={s.ticket}>
+                        {s.ticket} ({s.department}) {s.end_ts ? "[Closed]" : "[Open]"}
+                      </option>
+                    ))
+                  : <option>(no sessions)</option>
+                }
+              </select>
             </div>
 
-            {loadingSessions ? (
-              <div style={{ color: colors.sub }}>Loading sessions…</div>
-            ) : sessions.length === 0 ? (
-              <div style={{ color: colors.sub }}>No sessions yet — showing all messages:</div>
-            ) : sessions.map(sess => (
-              <details key={sess.sessionId} style={{ marginBottom: 16 }}>
-                <summary style={{
-                  padding: "8px 12px",
-                  background: colors.card,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  fontWeight: 600
-                }}>
-                  Session #{sess.sessionId} &nbsp;
-                  ({sess.messages.length} msgs) &nbsp;
-                  {sess.messages.some(m => m.closed) ? "🔒 Closed" : "🟢 Open"}
-                </summary>
-                <div style={{ padding: "8px 16px" }}>
-                  {sess.messages.map(m => (
-                    <div key={m.id} style={{
-                      marginBottom: 8,
-                      padding: "6px 10px",
-                      background: m.direction === "outgoing"
-                        ? colors.msgOut : colors.msgIn,
-                      color: m.direction === "outgoing" ? "#fff" : colors.text,
-                      borderRadius: 4,
-                      maxWidth: "85%"
-                    }}>
-                      <div style={{ fontSize: 13 }}>{m.body}</div>
-                      <div style={{ fontSize: 10, color: colors.sub, textAlign: "right" }}>
-                        {new Date(m.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
+            {/* Message history */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                background: colors.card,
+                borderRadius: 8,
+                padding: 16
+              }}
+            >
+              {messages.map(m => (
+                <div
+                  key={m.id}
+                  style={{
+                    marginBottom: 12,
+                    textAlign: m.direction === "incoming" ? "left" : "right"
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-block",
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      background: m.direction === "incoming" ? colors.input : colors.red,
+                      color: m.direction === "incoming" ? colors.inputText : "#fff"
+                    }}
+                  >
+                    {m.body}
+                  </div>
+                  <div style={{ fontSize: 12, color: colors.sub, marginTop: 4 }}>
+                    {new Date(m.timestamp).toLocaleString()}
+                  </div>
                 </div>
-              </details>
-            ))}
+              ))}
+            </div>
 
-            {/* If truly no sessions, show all messages flat */}
-            {sessions.length === 0 && (
-              <div style={{ marginTop: 8 }}>
-                {/* reuse groupIntoSessions on full set */}
+            {/* Reply box only if session still open */}
+            {selectedSession && !selectedSession.end_ts && (
+              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  placeholder="Type your reply…"
+                  value={reply}
+                  onChange={e => setReply(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "8px 12px",
+                    borderRadius: 6,
+                    border: `1px solid ${colors.border}`,
+                    background: colors.input,
+                    color: colors.inputText
+                  }}
+                />
+                <button
+                  onClick={sendReply}
+                  style={{
+                    background: colors.red,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 16px",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  Send
+                </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <div style={{ color: colors.sub }}>Select a chat on the left to view its sessions.</div>
+        )}
+      </div>
     </div>
   );
 }
