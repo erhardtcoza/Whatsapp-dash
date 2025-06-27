@@ -23,16 +23,20 @@ export default function Sidebar({
   onLogout,
   onDarkMode,
 }: SidebarProps) {
+  // Menu structure with spacers as null
   const menuItems = [
+    { label: "Unlinked Chats", icon: "🔗", key: "unlinked" },
     { label: "All Chats", icon: "💬", key: "allchats" },
-    { label: "Unlinked", icon: "🔗", key: "unlinked" },
-    { label: "Support", icon: "🛠️", key: "support" },
-    { label: "Accounts", icon: "💳", key: "accounts" },
-    { label: "Sales", icon: "💼", key: "sales" },
+    null,
+    { label: "New Message", icon: "✉️", key: "send" },
+    null,
     { label: "Leads", icon: "📈", key: "leads" },
-    // new:
-    { label: "Send Message", icon: "✉️", key: "send" },
-    // auto-reply
+    { label: "Sales", icon: "💼", key: "sales" },
+    null,
+    { label: "Accounts", icon: "💳", key: "accounts" },
+    null,
+    { label: "Support", icon: "🛠️", key: "support" },
+    null, null, null,
     { label: "Auto Response", icon: "🤖", key: "autoresp" },
     { label: "Office Hours", icon: "⏰", key: "office" },
     { label: "System", icon: "⚙️", key: "system" },
@@ -48,15 +52,20 @@ export default function Sidebar({
       <div style={{ padding: "0 12px 18px 22px" }}>
         <img src={vinetLogo} alt="Vinet" style={{ width: 80, marginBottom: 6 }} />
       </div>
-      {menuItems.map(item => (
-        <SidebarItem
-          key={item.key}
-          label={item.label}
-          icon={item.icon}
-          selected={selected === item.key}
-          onClick={() => onSelect(item.key)}
-        />
-      ))}
+      {menuItems.map((item, idx) =>
+        item ? (
+          <SidebarItem
+            key={item.key}
+            label={item.label}
+            icon={item.icon}
+            selected={selected === item.key}
+            onClick={() => onSelect(item.key)}
+          />
+        ) : (
+          // Spacer
+          <div key={"spacer-" + idx} style={{ height: 12 }} />
+        )
+      )}
       <div style={{ flex: 1 }} />
       <div style={{ padding: 12 }}>
         <input
