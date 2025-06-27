@@ -1,54 +1,95 @@
+// src/AccountsPage.tsx
 import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
 
+interface Session {
+  ticket: string;
+  phone: string;
+  name: string;
+  customer_id: string;
+  department: string;
+  start_ts: number;
+  end_ts: number | null;
+}
+
 export default function AccountsPage({ colors }: any) {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selected, setSelected] = useState<Session | null>(null);
+  const [allMessages, setAllMessages] = useState<any[]>([]);
   const [reply, setReply] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // fetch open account sessions
+  // 1) load open account sessions
   useEffect(() => {
-    fetch(`${API_BASE}/api/accounts-chats`)
-      .then((r) => r.json())
+    fetch(`${API_BASE}/api/accounts-chatsessions`)
+      .then(r => r.json())
       .then(setSessions);
   }, []);
 
-  // when you select a session, load its messages
+  // 2) when a session is selected, load ALL messages for that phone
   useEffect(() => {
-    if (!selectedPhone) return;
-    fetch(`${API_BASE}/api/messages?phone=${selectedPhone}`)
-      .then((r) => r.json())
-      .then((msgs) => {
-        setMessages(msgs);
-        // scroll to bottom after a tick
+    if (!selected) return;
+    fetch(`${API_BASE}/api/messages?phone=${selected.phone}`)
+      .then(r => r.json())
+      .then(msgs => {
+        setAllMessages(msgs);
+        // scroll after render
         setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
       });
-  }, [selectedPhone]);
+  }, [selected]);
 
-  // send a reply
+  // 3) compute only the messages in this session
+  const sessionMessages = selected
+    ? allMessages.filter(m =>
+        m.timestamp >= selected.start_ts &&
+        (selected.end_ts === null || m.timestamp <= selected.end_ts)
+      )
+    : [];
+
+  // 4) send a reply
   async function sendReply() {
-    if (!selectedPhone || !reply.trim()) return;
+    if (!selected || !reply.trim()) return;
     await fetch(`${API_BASE}/api/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selectedPhone, body: reply.trim() }),
+      body: JSON.stringify({ phone: selected.phone, body: reply.trim() }),
     });
     setReply("");
-    // reload
-    const r = await fetch(`${API_BASE}/api/messages?phone=${selectedPhone}`);
-    const msgs = await r.json();
-    setMessages(msgs);
+    // reload that session's messages
+    const msgs = await fetch(`${API_BASE}/api/messages?phone=${selected.phone}`).then(r => r.json());
+    setAllMessages(msgs);
     setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
+  }
+
+  // 5) close session
+  async function closeSession() {
+    if (!selected) return;
+    // 5a) close on server
+    await fetch(`${API_BASE}/api/close-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket: selected.ticket }),
+    });
+    // 5b) notify user
+    await fetch(`${API_BASE}/api/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: selected.phone,
+        body: "This chat session has been closed. To start a new one, just say hi!"
+      }),
+    });
+    // 5c) reset selection & reload sessions
+    setSelected(null);
+    setSessions(await fetch(`${API_BASE}/api/accounts-chatsessions`).then(r => r.json()));
   }
 
   return (
     <div style={{ display: "flex", padding: 32, gap: 32 }}>
-      {/* Sidebar list of open sessions */}
-      <div style={{ width: 280 }}>
+      {/* SESSION LIST */}
+      <div style={{ width: 300 }}>
         <h3 style={{ color: colors.red, fontWeight: 700, marginBottom: 12 }}>
-          Open Accounts Sessions
+          Accounts Sessions
         </h3>
         <div style={{
           background: colors.card,
@@ -57,21 +98,24 @@ export default function AccountsPage({ colors }: any) {
           overflowY: "auto",
           border: `1px solid ${colors.border}`,
         }}>
-          {sessions.map((s) => (
+          {sessions.map(sess => (
             <div
-              key={s.from_number}
-              onClick={() => setSelectedPhone(s.from_number)}
+              key={sess.ticket}
+              onClick={() => setSelected(sess)}
               style={{
                 padding: "10px 14px",
                 cursor: "pointer",
-                background: selectedPhone === s.from_number ? colors.sidebarSel : "none",
-                color: selectedPhone === s.from_number ? "#fff" : colors.text,
+                background: selected?.ticket === sess.ticket ? colors.sidebarSel : "none",
+                color: selected?.ticket === sess.ticket ? "#fff" : colors.text,
                 borderBottom: `1px solid ${colors.border}`,
               }}
             >
-              <div style={{ fontWeight: 600 }}>{s.customer_id} – {s.name || "No Name"}</div>
+              <div style={{ fontWeight: 600 }}>
+                [{sess.customer_id}] {sess.name}
+              </div>
               <div style={{ fontSize: 13, color: colors.sub }}>
-                {s.from_number} · Last: {new Date(s.last_ts).toLocaleString()}
+                {sess.ticket} · {new Date(sess.start_ts).toLocaleString()}
+                {sess.end_ts ? " (closed)" : ""}
               </div>
             </div>
           ))}
@@ -81,7 +125,7 @@ export default function AccountsPage({ colors }: any) {
         </div>
       </div>
 
-      {/* Chat window */}
+      {/* CHAT WINDOW */}
       <div style={{
         flex: 1,
         display: "flex",
@@ -91,14 +135,53 @@ export default function AccountsPage({ colors }: any) {
         border: `1px solid ${colors.border}`,
         overflow: "hidden",
       }}>
-        {selectedPhone ? (
+        {selected ? (
           <>
-            {/* Messages */}
+            {/* header with Close Window & Close Session */}
+            <div style={{
+              padding: "10px 16px",
+              borderBottom: `1px solid ${colors.border}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}>
+              <div style={{ fontWeight: 600 }}>
+                Session: {selected.ticket}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => setSelected(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: 20,
+                    cursor: "pointer",
+                    color: colors.sub,
+                  }}
+                >✕</button>
+                <button
+                  onClick={closeSession}
+                  style={{
+                    background: colors.red,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Close Session
+                </button>
+              </div>
+            </div>
+
+            {/* messages */}
             <div
               ref={scrollRef}
               style={{ flex: 1, padding: 16, overflowY: "auto" }}
             >
-              {messages.map((m: any) => (
+              {sessionMessages.map(m => (
                 <div
                   key={m.id}
                   style={{
@@ -121,7 +204,7 @@ export default function AccountsPage({ colors }: any) {
               ))}
             </div>
 
-            {/* Reply box */}
+            {/* reply box */}
             <div style={{
               borderTop: `1px solid ${colors.border}`,
               padding: 12,
@@ -130,7 +213,7 @@ export default function AccountsPage({ colors }: any) {
             }}>
               <input
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={e => setReply(e.target.value)}
                 placeholder="Type your reply…"
                 style={{
                   flex: 1,
@@ -160,7 +243,7 @@ export default function AccountsPage({ colors }: any) {
           </>
         ) : (
           <div style={{ padding: 40, color: colors.sub }}>
-            Select a session to view and interact.
+            Select a session to open its chat.
           </div>
         )}
       </div>
