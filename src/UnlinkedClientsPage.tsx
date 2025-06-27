@@ -6,10 +6,10 @@ interface Client {
   name: string;
   email: string;
   last_msg: number;
-  welcome_msg?: string; // Add this field if you store initial msg in backend
+  welcome_msg?: string; // Initial message, from backend
 }
 
-export default function UnlinkedClientsPage({ colors }: any) {
+export default function UnlinkedClientsPage({ colors, onOpenChat }: any) {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState<Record<string, boolean>>({});
@@ -79,19 +79,11 @@ export default function UnlinkedClientsPage({ colors }: any) {
     fetchClients();
   }
 
-  async function messageClient(phone: string) {
-    await fetch(`${API_BASE}/api/message-client`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone,
-        message:
-          "Hi, we couldn't verify your information. Please reply with your account number or contact our support for further assistance."
-      }),
-    });
-    alert("Message sent to client for more security checks.");
-    setError(e => ({ ...e, [phone]: "" }));
-    closeVerify(phone);
+  function handleMessageClient(phone: string) {
+    // Pre-fill the chat with your security message and open the chat
+    const prefillMsg =
+      "Hi, we need to do a quick security check with you, please provide your ID number and what internet package do you currently have with us?";
+    onOpenChat(phone, prefillMsg);
   }
 
   return (
@@ -218,52 +210,4 @@ export default function UnlinkedClientsPage({ colors }: any) {
                           style={{
                             background: "#28a745",
                             color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => closeVerify(c.from_number)}
-                          style={{
-                            background: "#aaa",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => messageClient(c.from_number)}
-                          style={{
-                            background: "#ffc107",
-                            color: "#000",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          Message Client for Security Checks
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
+                            bo
