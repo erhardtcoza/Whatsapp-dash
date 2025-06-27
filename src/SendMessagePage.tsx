@@ -1,249 +1,218 @@
+// src/SendMessagePage.tsx
+
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-interface Customer {
-  phone: string;
-  name: string;
-  email: string;
-  customer_id: string;
+interface ChatSummary {
+  from_number: string;
+  name: string | null;
+  email: string | null;
+  customer_id: string | null;
+  last_message: string;
+  unread_count: number;
+  tag: string;
 }
 
-export default function SendMessagePage({ colors }: any) {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [selectedPhone, setSelectedPhone] = useState("");
+export default function SendMessagePage({ colors }: { colors: any }) {
+  const [clients, setClients] = useState<ChatSummary[]>([]);
+  const [selectedPhone, setSelectedPhone] = useState<string>("");
   const [message, setMessage] = useState("");
-
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newClient, setNewClient] = useState({
+  const [adding, setAdding] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
     phone: "",
     name: "",
     email: "",
     customer_id: "",
   });
-  const [savingClient, setSavingClient] = useState(false);
-  const [sending, setSending] = useState(false);
 
+  // fetch active chats
   useEffect(() => {
-    fetchCustomers();
+    fetch(`${API_BASE}/api/chats`)
+      .then((r) => r.json())
+      .then((data: ChatSummary[]) => {
+        setClients(data);
+        if (data.length) setSelectedPhone(data[0].from_number);
+      })
+      .catch(console.error);
   }, []);
 
-  async function fetchCustomers() {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/customers`);
-      const data = await res.json();
-      setCustomers(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSend() {
+  async function send() {
     if (!selectedPhone || !message.trim()) return;
-    setSending(true);
     await fetch(`${API_BASE}/api/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: selectedPhone, body: message.trim() })
+      body: JSON.stringify({ phone: selectedPhone, body: message }),
     });
     setMessage("");
-    setSending(false);
+    // optionally refresh chats/unread state...
   }
 
-  async function handleAddClient(e: React.FormEvent) {
+  async function addCustomer(e: React.FormEvent) {
     e.preventDefault();
-    setSavingClient(true);
+    const { phone, name, email, customer_id } = newCustomer;
+    if (!phone.trim()) return;
     await fetch(`${API_BASE}/api/update-customer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phone: newClient.phone,
-        name: newClient.name,
-        email: newClient.email,
-        customer_id: newClient.customer_id
-      })
+      body: JSON.stringify({ phone, name, email, customer_id }),
     });
-    setNewClient({ phone: "", name: "", email: "", customer_id: "" });
-    setShowAddForm(false);
-    await fetchCustomers();
-    setSavingClient(false);
+    // after adding, re-fetch chats
+    const data = await fetch(`${API_BASE}/api/chats`).then((r) => r.json());
+    setClients(data);
+    setSelectedPhone(phone);
+    setAdding(false);
   }
 
   return (
-    <div style={{
-      padding: 32,
-      maxWidth: 600,
-      margin: "0 auto",
-    }}>
-      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 24 }}>
+    <div style={{ padding: 32 }}>
+      <h2 style={{ color: colors.text, fontWeight: 600, fontSize: 22, marginBottom: 18 }}>
         Send Message
       </h2>
 
-      {/* client selector */}
-      {loading ? (
-        <div style={{ color: colors.sub }}>Loading clients…</div>
-      ) : (
-        <div style={{ marginBottom: 16 }}>
-          <select
-            value={selectedPhone}
-            onChange={e => setSelectedPhone(e.target.value)}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: "block", marginBottom: 6, color: colors.sub }}>
+          Select Client
+        </label>
+        <select
+          value={selectedPhone}
+          onChange={(e) => setSelectedPhone(e.target.value)}
+          style={{
+            width: 300,
+            padding: "7px 12px",
+            borderRadius: 6,
+            border: `1.3px solid ${colors.border}`,
+            fontSize: 15,
+            background: colors.input,
+            color: colors.inputText,
+          }}
+        >
+          {clients.map((c) => (
+            <option key={c.from_number} value={c.from_number}>
+              {c.name || c.from_number} — {c.last_message.slice(0, 20)}…
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => setAdding((f) => !f)}
+          style={{
+            marginLeft: 12,
+            background: colors.red,
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "7px 14px",
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          {adding ? "Cancel" : "Add Customer"}
+        </button>
+      </div>
+
+      {adding && (
+        <form onSubmit={addCustomer} style={{ marginBottom: 24, display: "grid", gap: 10, width: 300 }}>
+          <input
+            type="text"
+            placeholder="Phone"
+            value={newCustomer.phone}
+            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
             style={{
-              width: "100%",
-              padding: "8px 12px",
+              padding: "7px 12px",
               borderRadius: 6,
-              border: `1px solid ${colors.border}`,
+              border: `1.3px solid ${colors.border}`,
               fontSize: 15,
-              marginBottom: 8,
             }}
-          >
-            <option value="">-- select client --</option>
-            {customers.map(c => (
-              <option key={c.phone} value={c.phone}>
-                {c.name || c.phone} ({c.customer_id || "–"})
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => setShowAddForm(show => !show)}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Name"
+            value={newCustomer.name}
+            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
             style={{
-              background: "none",
-              color: colors.red,
-              border: `1px solid ${colors.red}`,
+              padding: "7px 12px",
               borderRadius: 6,
-              padding: "6px 12px",
-              cursor: "pointer",
-              fontWeight: 600,
+              border: `1.3px solid ${colors.border}`,
+              fontSize: 15,
             }}
-          >
-            {showAddForm ? "Cancel" : "+ Add Client"}
-          </button>
-        </div>
-      )}
-
-      {/* add-client form */}
-      {showAddForm && (
-        <form onSubmit={handleAddClient} style={{
-          marginBottom: 24,
-          padding: 16,
-          background: colors.card,
-          borderRadius: 8,
-          border: `1px solid ${colors.border}`
-        }}>
-          <div style={{ marginBottom: 8 }}>
-            <input
-              type="text"
-              placeholder="Phone"
-              value={newClient.phone}
-              onChange={e => setNewClient(n => ({ ...n, phone: e.target.value }))}
-              style={{
-                width: "100%",
-                padding: "7px 12px",
-                borderRadius: 6,
-                border: `1px solid ${colors.border}`,
-                fontSize: 15,
-                marginBottom: 8,
-              }}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Name"
-              value={newClient.name}
-              onChange={e => setNewClient(n => ({ ...n, name: e.target.value }))}
-              style={{
-                width: "100%",
-                padding: "7px 12px",
-                borderRadius: 6,
-                border: `1px solid ${colors.border}`,
-                fontSize: 15,
-                marginBottom: 8,
-              }}
-              required
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={newClient.email}
-              onChange={e => setNewClient(n => ({ ...n, email: e.target.value }))}
-              style={{
-                width: "100%",
-                padding: "7px 12px",
-                borderRadius: 6,
-                border: `1px solid ${colors.border}`,
-                fontSize: 15,
-                marginBottom: 8,
-              }}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Customer ID"
-              value={newClient.customer_id}
-              onChange={e => setNewClient(n => ({ ...n, customer_id: e.target.value }))}
-              style={{
-                width: "100%",
-                padding: "7px 12px",
-                borderRadius: 6,
-                border: `1px solid ${colors.border}`,
-                fontSize: 15,
-                marginBottom: 8,
-              }}
-            />
-          </div>
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={newCustomer.email}
+            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+            style={{
+              padding: "7px 12px",
+              borderRadius: 6,
+              border: `1.3px solid ${colors.border}`,
+              fontSize: 15,
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Customer ID"
+            value={newCustomer.customer_id}
+            onChange={(e) => setNewCustomer({ ...newCustomer, customer_id: e.target.value })}
+            style={{
+              padding: "7px 12px",
+              borderRadius: 6,
+              border: `1.3px solid ${colors.border}`,
+              fontSize: 15,
+            }}
+          />
           <button
             type="submit"
-            disabled={savingClient}
             style={{
               background: colors.red,
               color: "#fff",
               border: "none",
-              borderRadius: 7,
-              padding: "8px 18px",
-              fontWeight: 700,
+              borderRadius: 6,
+              padding: "8px 14px",
+              fontWeight: 600,
               fontSize: 15,
               cursor: "pointer",
             }}
           >
-            {savingClient ? "Saving…" : "Save Client"}
+            Save Customer
           </button>
         </form>
       )}
 
-      {/* message box */}
-      <textarea
-        placeholder="Your message…"
-        value={message}
-        onChange={e => setMessage(e.target.value)}
-        rows={5}
-        style={{
-          width: "100%",
-          padding: "12px",
-          borderRadius: 8,
-          border: `1px solid ${colors.border}`,
-          fontSize: 15,
-          marginBottom: 16,
-        }}
-      />
-
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "block", marginBottom: 6, color: colors.sub }}>
+          Message
+        </label>
+        <textarea
+          rows={4}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          style={{
+            width: "100%",
+            maxWidth: 500,
+            padding: "7px 12px",
+            borderRadius: 6,
+            border: `1.3px solid ${colors.border}`,
+            fontSize: 15,
+            background: colors.input,
+            color: colors.inputText,
+          }}
+        />
+      </div>
       <button
-        onClick={handleSend}
-        disabled={!selectedPhone || !message.trim() || sending}
+        onClick={send}
         style={{
           background: colors.red,
           color: "#fff",
           border: "none",
-          borderRadius: 8,
-          padding: "10px 24px",
+          borderRadius: 6,
+          padding: "10px 20px",
           fontWeight: 700,
-          fontSize: 16,
-          cursor: selectedPhone && message.trim() && !sending ? "pointer" : "not-allowed",
-          opacity: sending ? 0.6 : 1,
+          fontSize: 15,
+          cursor: "pointer",
         }}
       >
-        {sending ? "Sending…" : "Send"}
+        Send
       </button>
     </div>
   );
