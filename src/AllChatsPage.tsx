@@ -37,7 +37,7 @@ export default function AllChatsPage({ colors }: any) {
       .then(msgs => {
         // filter to only messages in this session
         const filtered = msgs.filter(
-          m =>
+          (m: any) =>
             m.timestamp >= selectedSession.start_ts &&
             (selectedSession.end_ts === null || m.timestamp <= selectedSession.end_ts)
         );
@@ -60,7 +60,7 @@ export default function AllChatsPage({ colors }: any) {
       .then(r => r.json())
       .then(msgs => {
         const filtered = msgs.filter(
-          m =>
+          (m: any) =>
             m.timestamp >= selectedSession.start_ts &&
             (selectedSession.end_ts === null || m.timestamp <= selectedSession.end_ts)
         );
@@ -104,7 +104,7 @@ export default function AllChatsPage({ colors }: any) {
           overflowY: "auto",
           border: `1px solid ${colors.border}`,
         }}>
-          {customers.map(cust => (
+          {customers.map((cust: any) => (
             <div
               key={cust.phone}
               onClick={() => setSelectedCustomer(cust)}
@@ -157,7 +157,7 @@ export default function AllChatsPage({ colors }: any) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map(sess => (
+                  {sessions.map((sess: any) => (
                     <tr
                       key={sess.ticket}
                       style={{
@@ -222,7 +222,7 @@ export default function AllChatsPage({ colors }: any) {
                   ref={scrollRef}
                   style={{ maxHeight: 250, overflowY: "auto", marginBottom: 10 }}
                 >
-                  {messages.map(m => (
+                  {messages.map((m: any) => (
                     <div
                       key={m.id}
                       style={{
