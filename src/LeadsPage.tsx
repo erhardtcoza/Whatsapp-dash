@@ -6,22 +6,27 @@ export default function LeadsPage({ colors }: any) {
   const [selected, setSelected] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/leads`)
-      .then(r => r.json())
-      .then(setLeads);
+    fetchLeads();
   }, []);
 
-  async function markContacted(phone: string) {
+  async function fetchLeads() {
+    const res = await fetch(`${API_BASE}/api/leads`);
+    const leads = await res.json();
+    setLeads(leads);
+    // If you want to auto-select first lead:
+    // if (leads.length > 0) setSelected(leads[0]);
+  }
+
+  async function markContacted(id: number) {
     await fetch(`${API_BASE}/api/lead-contacted`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify({ id }),
     });
-    setLeads(leads =>
-      leads.map(lead =>
-        lead.phone === phone ? { ...lead, contacted: 1 } : lead
-      )
-    );
+    await fetchLeads();
+    if (selected && selected.id === id) {
+      setSelected({ ...selected, status: "contacted" });
+    }
   }
 
   return (
@@ -43,21 +48,24 @@ export default function LeadsPage({ colors }: any) {
           )}
           {leads.map(lead => (
             <div
-              key={lead.phone}
+              key={lead.id}
               onClick={() => setSelected(lead)}
               style={{
                 padding: "12px 14px",
                 cursor: "pointer",
-                background: selected?.phone === lead.phone ? colors.sidebarSel : "none",
-                color: selected?.phone === lead.phone ? "#fff" : colors.text,
+                background: selected?.id === lead.id ? colors.sidebarSel : "none",
+                color: selected?.id === lead.id ? "#fff" : colors.text,
                 borderBottom: `1px solid ${colors.border}`,
               }}
             >
               <div style={{ fontWeight: 600 }}>
-                {lead.name || "(No name)"} {lead.contacted ? "✅" : ""}
+                {lead.name || "(No name)"} {lead.status === "contacted" ? "✅" : ""}
               </div>
               <div style={{ fontSize: 13, color: colors.sub }}>
                 {lead.phone} · {lead.email}
+              </div>
+              <div style={{ fontSize: 12, color: colors.sub }}>
+                {lead.address ? `📍 ${lead.address}` : ""}
               </div>
             </div>
           ))}
@@ -77,7 +85,7 @@ export default function LeadsPage({ colors }: any) {
           <div>
             <h4 style={{ margin: "0 0 16px 0" }}>
               {selected.name}
-              {selected.contacted ? (
+              {selected.status === "contacted" ? (
                 <span style={{ color: "green", marginLeft: 10 }}>Contacted</span>
               ) : null}
             </h4>
@@ -85,18 +93,21 @@ export default function LeadsPage({ colors }: any) {
               <b>Phone:</b> {selected.phone}
             </div>
             <div style={{ marginBottom: 12 }}>
-              <b>Email:</b> {selected.email}
+              <b>Email:</b> {selected.email || "-"}
             </div>
             <div style={{ marginBottom: 12 }}>
               <b>Address:</b> {selected.address || "-"}
             </div>
+            <div style={{ marginBottom: 12 }}>
+              <b>Status:</b> {selected.status || "new"}
+            </div>
             <div style={{ marginBottom: 18 }}>
               <b>Created:</b>{" "}
-              {selected.created_ts
-                ? new Date(selected.created_ts).toLocaleString()
+              {selected.created_at
+                ? new Date(selected.created_at).toLocaleString()
                 : "-"}
             </div>
-            {!selected.contacted && (
+            {selected.status !== "contacted" && (
               <button
                 style={{
                   background: colors.red,
@@ -107,7 +118,7 @@ export default function LeadsPage({ colors }: any) {
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
-                onClick={() => markContacted(selected.phone)}
+                onClick={() => markContacted(selected.id)}
               >
                 Mark as Contacted
               </button>
