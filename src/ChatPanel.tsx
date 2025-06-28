@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
+import MessageBubble from "./MessageBubble";
 
 interface Message {
   id: number;
@@ -61,7 +62,14 @@ export default function ChatPanel({
     });
     setMessages((m) => [
       ...m,
-      { id: Date.now(), from_number: phone, body, tag: "outgoing", timestamp: Date.now(), direction: "outgoing" },
+      {
+        id: Date.now(),
+        from_number: phone,
+        body,
+        tag: "outgoing",
+        timestamp: Date.now(),
+        direction: "outgoing",
+      },
     ]);
   }
 
@@ -75,7 +83,15 @@ export default function ChatPanel({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: "20px 40px", borderBottom: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between" }}>
+      {/* Header */}
+      <div
+        style={{
+          padding: "20px 40px",
+          borderBottom: `1px solid ${colors.border}`,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <div>
           <strong>{contact?.name || phone}</strong>
           {contact?.customer_id && <> — #{contact.customer_id}</>}
@@ -95,7 +111,15 @@ export default function ChatPanel({
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 40px", background: colors.msgIn }}>
+      {/* Messages */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "16px 40px",
+          background: colors.msgIn,
+        }}
+      >
         {loading ? (
           <div style={{ color: colors.sub }}>Loading messages…</div>
         ) : (
@@ -103,98 +127,28 @@ export default function ChatPanel({
             <div
               key={m.id}
               style={{
-                marginBottom: 12,
+                marginBottom: 2,
                 display: "flex",
-                justifyContent: m.direction === "outgoing" ? "flex-end" : "flex-start",
+                justifyContent:
+                  m.direction === "outgoing" ? "flex-end" : "flex-start",
               }}
             >
-              <div
-                style={{
-                  maxWidth: "70%",
-                  padding: "8px 12px",
-                  background: m.direction === "outgoing" ? colors.msgOut : colors.card,
-                  color: m.direction === "outgoing" ? "#fff" : colors.text,
-                  borderRadius: 8,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {/* --- IMAGE --- */}
-                {m.media_url && /\.(jpe?g|png|gif|webp)$/i.test(m.media_url) && (
-                  <div style={{ marginBottom: m.body && m.body !== "[Image]" ? 6 : 0 }}>
-                    <img
-                      src={m.media_url}
-                      alt="attachment"
-                      style={{ maxWidth: 220, maxHeight: 220, borderRadius: 6, display: "block" }}
-                    />
-                  </div>
-                )}
-
-                {/* --- AUDIO --- */}
-                {m.media_url && /\.(mp3|ogg|wav|m4a)$/i.test(m.media_url) && (
-                  <audio controls style={{ width: "100%", marginTop: 8 }}>
-                    <source src={m.media_url} />
-                    Your browser does not support audio.
-                  </audio>
-                )}
-
-                {/* --- DOCUMENT --- */}
-                {m.media_url &&
-                  !/\.(jpe?g|png|gif|webp|mp3|ogg|wav|m4a)$/i.test(m.media_url) &&
-                  !m.location_json && (
-                    <a
-                      href={m.media_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-block",
-                        marginTop: 8,
-                        color: colors.red,
-                        textDecoration: "underline",
-                      }}
-                    >
-                      Download attachment
-                    </a>
-                  )}
-
-                {/* --- LOCATION --- */}
-                {m.location_json && (() => {
-                  try {
-                    const loc = JSON.parse(m.location_json);
-                    const mapUrl = `https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`;
-                    return (
-                      <a
-                        href={mapUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-block",
-                          marginTop: 8,
-                          color: colors.red,
-                          textDecoration: "underline",
-                        }}
-                      >
-                        View location
-                      </a>
-                    );
-                  } catch {
-                    return null;
-                  }
-                })()}
-
-                {/* --- MESSAGE TEXT (body) --- */}
-                {/* Only show if not a redundant [Image] with an image above */}
-                {(!m.media_url || m.body !== "[Image]") && !!m.body && (
-                  <div>{m.body}</div>
-                )}
-              </div>
+              <MessageBubble m={m} colors={colors} />
             </div>
           ))
         )}
         <div ref={endRef} />
       </div>
 
-      <div style={{ padding: "12px 40px", borderTop: `1px solid ${colors.border}`, display: "flex", gap: 8 }}>
+      {/* Input */}
+      <div
+        style={{
+          padding: "12px 40px",
+          borderTop: `1px solid ${colors.border}`,
+          display: "flex",
+          gap: 8,
+        }}
+      >
         <input
           type="text"
           placeholder="Type a message…"
