@@ -1,6 +1,6 @@
-// src/AccountsPage.tsx
 import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
+import MessageBubble from "./MessageBubble";
 
 interface Session {
   ticket: string;
@@ -19,26 +19,22 @@ export default function AccountsPage({ colors }: any) {
   const [reply, setReply] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1) load open account sessions
   useEffect(() => {
     fetch(`${API_BASE}/api/accounts-chatsessions`)
       .then(r => r.json())
       .then(setSessions);
   }, []);
 
-  // 2) when a session is selected, load ALL messages for that phone
   useEffect(() => {
     if (!selected) return;
     fetch(`${API_BASE}/api/messages?phone=${selected.phone}`)
       .then(r => r.json())
       .then(msgs => {
         setAllMessages(msgs);
-        // scroll after render
         setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
       });
   }, [selected]);
 
-  // 3) compute only the messages in this session
   const sessionMessages = selected
     ? allMessages.filter(m =>
         m.timestamp >= selected.start_ts &&
@@ -46,7 +42,6 @@ export default function AccountsPage({ colors }: any) {
       )
     : [];
 
-  // 4) send a reply
   async function sendReply() {
     if (!selected || !reply.trim()) return;
     await fetch(`${API_BASE}/api/send-message`, {
@@ -55,22 +50,18 @@ export default function AccountsPage({ colors }: any) {
       body: JSON.stringify({ phone: selected.phone, body: reply.trim() }),
     });
     setReply("");
-    // reload that session's messages
     const msgs = await fetch(`${API_BASE}/api/messages?phone=${selected.phone}`).then(r => r.json());
     setAllMessages(msgs);
     setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 50);
   }
 
-  // 5) close session
   async function closeSession() {
     if (!selected) return;
-    // 5a) close on server
     await fetch(`${API_BASE}/api/close-session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ticket: selected.ticket }),
     });
-    // 5b) notify user
     await fetch(`${API_BASE}/api/send-message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -79,7 +70,6 @@ export default function AccountsPage({ colors }: any) {
         body: "This chat session has been closed. To start a new one, just say hi!"
       }),
     });
-    // 5c) reset selection & reload sessions
     setSelected(null);
     setSessions(await fetch(`${API_BASE}/api/accounts-chatsessions`).then(r => r.json()));
   }
@@ -190,16 +180,7 @@ export default function AccountsPage({ colors }: any) {
                     marginBottom: 8,
                   }}
                 >
-                  <div style={{
-                    background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
-                    color: m.direction === "outgoing" ? "#fff" : colors.text,
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    maxWidth: "70%",
-                    wordBreak: "break-word",
-                  }}>
-                    {m.body}
-                  </div>
+                  <MessageBubble m={m} colors={colors} />
                 </div>
               ))}
             </div>
