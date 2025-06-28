@@ -37,7 +37,7 @@ export default function Sidebar({
     null,
     { label: "Support", icon: "🛠️", key: "support" },
     null, null, null,
-    { label: "Auto Response", icon: "🤖", key: "autoresp" },
+    { label: "Templates", icon: "📝", key: "templates" }, // <---- Updated here
     { label: "Office Hours", icon: "⏰", key: "office" },
     { label: "System", icon: "⚙️", key: "system" },
     ...(user.role === "admin" ? [{ label: "Add User", icon: "➕", key: "adduser" }] : []),
