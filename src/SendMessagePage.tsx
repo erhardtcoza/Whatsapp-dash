@@ -1,6 +1,7 @@
 // src/SendMessagePage.tsx
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
+import MessageBubble from "./MessageBubble"; // Import the bubble
 
 interface Customer {
   phone: string;
@@ -162,6 +163,24 @@ export default function SendMessagePage({ colors }: any) {
           resize: "vertical"
         }}
       />
+
+      {/* Message bubble preview */}
+      {msg.trim() && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: colors.sub, marginBottom: 6 }}>Preview:</div>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <MessageBubble
+              m={{
+                body: msg,
+                direction: "outgoing",
+                tag: "system",
+                timestamp: Date.now()
+              }}
+              colors={colors}
+            />
+          </div>
+        </div>
+      )}
 
       <button
         onClick={send}
