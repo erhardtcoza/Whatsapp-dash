@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
+import MessageBubble from "./MessageBubble";
 
 interface Session {
   ticket: string;
@@ -173,16 +174,7 @@ export default function SupportPage({ colors }: any) {
                     marginBottom: 8,
                   }}
                 >
-                  <div style={{
-                    background: m.direction === "outgoing" ? colors.msgOut : colors.msgIn,
-                    color: m.direction === "outgoing" ? "#fff" : colors.text,
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    maxWidth: "70%",
-                    wordBreak: "break-word",
-                  }}>
-                    {m.body}
-                  </div>
+                  <MessageBubble m={m} colors={colors} />
                 </div>
               ))}
             </div>
