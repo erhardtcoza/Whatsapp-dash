@@ -17,7 +17,7 @@ export default function ChatPanel({
   contact,
   colors,
   onCloseChat,
-  prefillMsg, // new optional prop
+  prefillMsg,
 }: {
   phone?: string;
   contact?: any;
@@ -40,14 +40,12 @@ export default function ChatPanel({
       .finally(() => setLoading(false));
   }, [phone]);
 
-  // Prefill logic
   useEffect(() => {
     if (typeof prefillMsg === "string" && prefillMsg && phone) {
       setNewMsg(prefillMsg);
     }
   }, [prefillMsg, phone]);
 
-  // scroll to bottom on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -121,29 +119,28 @@ export default function ChatPanel({
                   wordBreak: "break-word",
                 }}
               >
-                {/* text */}
-                {m.body && <div>{m.body}</div>}
-
-                {/* image */}
-                {m.media_url && /\.(jpg|jpeg|png|gif)$/i.test(m.media_url) && (
-                  <img
-                    src={m.media_url}
-                    alt="attachment"
-                    style={{ maxWidth: "100%", borderRadius: 6, marginTop: 8 }}
-                  />
+                {/* --- IMAGE --- */}
+                {m.media_url && /\.(jpe?g|png|gif|webp)$/i.test(m.media_url) && (
+                  <div style={{ marginBottom: m.body && m.body !== "[Image]" ? 6 : 0 }}>
+                    <img
+                      src={m.media_url}
+                      alt="attachment"
+                      style={{ maxWidth: 220, maxHeight: 220, borderRadius: 6, display: "block" }}
+                    />
+                  </div>
                 )}
 
-                {/* audio */}
-                {m.media_url && /\.(mp3|ogg|wav)$/i.test(m.media_url) && (
+                {/* --- AUDIO --- */}
+                {m.media_url && /\.(mp3|ogg|wav|m4a)$/i.test(m.media_url) && (
                   <audio controls style={{ width: "100%", marginTop: 8 }}>
                     <source src={m.media_url} />
                     Your browser does not support audio.
                   </audio>
                 )}
 
-                {/* document */}
+                {/* --- DOCUMENT --- */}
                 {m.media_url &&
-                  !/\.(jpg|jpeg|png|gif|mp3|ogg|wav)$/i.test(m.media_url) &&
+                  !/\.(jpe?g|png|gif|webp|mp3|ogg|wav|m4a)$/i.test(m.media_url) &&
                   !m.location_json && (
                     <a
                       href={m.media_url}
@@ -160,7 +157,7 @@ export default function ChatPanel({
                     </a>
                   )}
 
-                {/* location */}
+                {/* --- LOCATION --- */}
                 {m.location_json && (() => {
                   try {
                     const loc = JSON.parse(m.location_json);
@@ -184,6 +181,12 @@ export default function ChatPanel({
                     return null;
                   }
                 })()}
+
+                {/* --- MESSAGE TEXT (body) --- */}
+                {/* Only show if not a redundant [Image] with an image above */}
+                {(!m.media_url || m.body !== "[Image]") && !!m.body && (
+                  <div>{m.body}</div>
+                )}
               </div>
             </div>
           ))
