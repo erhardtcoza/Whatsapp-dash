@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { API_BASE } from "./config";
-import MessageBubble from "./MessageBubble"; // <-- Import the bubble
+import MessageBubble from "./MessageBubble";
 
 interface Session {
   ticket: string;
