@@ -1,260 +1,140 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "./config";
 
-interface Client {
-  from_number: string;
-  name: string;
-  email: string;
-  last_msg: number;
-  welcome_msg?: string; // Initial message, from backend
-}
-
-export default function UnlinkedClientsPage({ colors, onOpenChat }: any) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [verifying, setVerifying] = useState<Record<string, boolean>>({});
-  const [form, setForm] = useState<Record<string, { name: string; email: string; customer_id: string }>>({});
-  const [error, setError] = useState<Record<string, string>>({});
+export default function UnlinkedPage({ colors }: any) {
+  const [clients, setClients] = useState<any[]>([]);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [messagePhone, setMessagePhone] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchClients();
+    fetch(`${API_BASE}/api/unlinked-clients`)
+      .then(r => r.json())
+      .then(setClients);
   }, []);
 
-  async function fetchClients() {
+  async function saveEdit() {
     setLoading(true);
-    const res = await fetch(`${API_BASE}/api/unlinked-clients`);
-    const data = await res.json();
-    setClients(data);
+    await fetch(`${API_BASE}/api/verify-client`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editing),
+    });
+    setClients(
+      clients.map(c => c.phone === editing.phone ? { ...editing, verified: 1 } : c)
+    );
+    setEditing(null);
     setLoading(false);
   }
 
-  function openVerify(phone: string, existing: Client) {
-    setError(e => ({ ...e, [phone]: "" }));
-    setVerifying(v => ({ ...v, [phone]: true }));
-    setForm(f => ({
-      ...f,
-      [phone]: { name: existing.name, email: existing.email, customer_id: "" }
-    }));
-  }
-
-  function closeVerify(phone: string) {
-    setVerifying(v => ({ ...v, [phone]: false }));
-    setError(e => ({ ...e, [phone]: "" }));
-  }
-
-  function handleChange(phone: string, field: keyof Client | "customer_id", value: string) {
-    setForm(f => ({
-      ...f,
-      [phone]: { ...f[phone], [field]: value }
-    }));
-  }
-
-  async function submitVerify(phone: string) {
-    const { name, email, customer_id } = form[phone];
-    if (!name || !email || !customer_id) {
-      setError(e => ({ ...e, [phone]: "Please complete all fields." }));
-      return;
-    }
-    const response = await fetch(`${API_BASE}/api/update-customer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, name, email, customer_id })
-    });
-    const result = await response.json();
-    if (result && result.success) {
-      closeVerify(phone);
-      fetchClients();
-    } else {
-      setError(e => ({ ...e, [phone]: "Verification failed. Please check details or message the client for security checks." }));
-    }
-  }
-
   async function deleteClient(phone: string) {
-    if (!confirm(`Delete unverified client ${phone}?`)) return;
-    await fetch(`${API_BASE}/api/delete-customer`, {
+    setLoading(true);
+    await fetch(`${API_BASE}/api/delete-client`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone })
+      body: JSON.stringify({ phone }),
     });
-    fetchClients();
+    setClients(clients.filter(c => c.phone !== phone));
+    setLoading(false);
   }
 
-  function handleMessageClient(phone: string) {
-    // Pre-fill the chat with your security message and open the chat
-    const prefillMsg =
-      "Hi, we need to do a quick security check with you, please provide your ID number and what internet package do you currently have with us?";
-    onOpenChat(phone, prefillMsg);
+  async function sendMessage(phone: string) {
+    setLoading(true);
+    await fetch(`${API_BASE}/api/send-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, body: messageText }),
+    });
+    setMessagePhone(null);
+    setMessageText("");
+    setLoading(false);
   }
 
   return (
-    <div style={{
-      padding: 32,
-      maxWidth: 1000,
-      margin: "0 auto",
-      alignItems: "flex-start",
-      textAlign: "left"
-    }}>
-      {loading ? (
-        <div style={{ color: colors.sub }}>Loading…</div>
-      ) : (
-        <table style={{
-          width: "100%",
-          background: colors.card,
-          borderRadius: 9,
-          borderCollapse: "separate",
-          borderSpacing: "0 8px"
-        }}>
-          <thead>
-            <tr>
-              <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Phone</th>
-              <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Last Msg</th>
-              <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Name</th>
-              <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Email</th>
-              <th style={{ padding: "8px", textAlign: "left", color: colors.sub }}>Initial Welcome Msg</th>
-              <th></th>
+    <div style={{ padding: 32 }}>
+      <h2 style={{ color: colors.text, marginBottom: 24 }}>Unlinked Clients</h2>
+      <table style={{ width: "100%", background: colors.card, borderRadius: 8 }}>
+        <thead>
+          <tr>
+            <th>Phone</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Last Msg</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {clients.map(client => (
+            <tr key={client.phone}>
+              <td>{client.phone}</td>
+              <td>{client.name}</td>
+              <td>{client.email}</td>
+              <td>{client.last_msg || "-"}</td>
+              <td>
+                <button
+                  style={{ background: colors.red, color: "#fff", borderRadius: 6, marginRight: 8 }}
+                  onClick={() => setEditing(client)}
+                >Verify / Edit</button>
+                <button
+                  style={{ background: "#eee", color: colors.text, borderRadius: 6, marginRight: 8 }}
+                  onClick={() => setMessagePhone(client.phone)}
+                >Send Security Check</button>
+                <button
+                  style={{ background: "#aaa", color: "#fff", borderRadius: 6 }}
+                  onClick={() => deleteClient(client.phone)}
+                >Delete</button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {clients.map(c => (
-              <tr key={c.from_number} style={{ background: "#fff", borderRadius: 6 }}>
-                <td style={{ padding: "8px" }}>{c.from_number}</td>
-                <td style={{ padding: "8px" }}>
-                  {new Date(c.last_msg).toLocaleString()}
-                </td>
-                <td style={{ padding: "8px" }}>{c.name}</td>
-                <td style={{ padding: "8px" }}>{c.email}</td>
-                <td style={{ padding: "8px", maxWidth: 260, fontSize: 13 }}>
-                  {c.welcome_msg || "-"}
-                </td>
-                <td style={{ padding: "8px", display: "flex", gap: 6 }}>
-                  {!verifying[c.from_number] ? (
-                    <>
-                      <button
-                        onClick={() => openVerify(c.from_number, c)}
-                        style={{
-                          background: colors.red,
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "6px 12px",
-                          cursor: "pointer",
-                          fontWeight: 600
-                        }}
-                      >
-                        Verify / Edit
-                      </button>
-                      <button
-                        onClick={() => deleteClient(c.from_number)}
-                        style={{
-                          background: "#aaa",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "6px 12px",
-                          cursor: "pointer",
-                          fontWeight: 600
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  ) : (
-                    <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <input
-                          type="text"
-                          placeholder="Name"
-                          value={form[c.from_number]?.name || ""}
-                          onChange={e => handleChange(c.from_number, "name", e.target.value)}
-                          style={{
-                            padding: "6px",
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 6,
-                            fontSize: 14,
-                            width: 120
-                          }}
-                        />
-                        <input
-                          type="email"
-                          placeholder="Email"
-                          value={form[c.from_number]?.email || ""}
-                          onChange={e => handleChange(c.from_number, "email", e.target.value)}
-                          style={{
-                            padding: "6px",
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 6,
-                            fontSize: 14,
-                            width: 160
-                          }}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Customer ID"
-                          value={form[c.from_number]?.customer_id || ""}
-                          onChange={e => handleChange(c.from_number, "customer_id", e.target.value)}
-                          style={{
-                            padding: "6px",
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 6,
-                            fontSize: 14,
-                            width: 100
-                          }}
-                        />
-                      </div>
-                      {error[c.from_number] && (
-                        <div style={{ color: colors.red, fontSize: 13 }}>{error[c.from_number]}</div>
-                      )}
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          onClick={() => submitVerify(c.from_number)}
-                          style={{
-                            background: "#28a745",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => closeVerify(c.from_number)}
-                          style={{
-                            background: "#aaa",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleMessageClient(c.from_number)}
-                          style={{
-                            background: "#ffc107",
-                            color: "#000",
-                            border: "none",
-                            borderRadius: 6,
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            fontWeight: 600
-                          }}
-                        >
-                          Message Client for Security Checks
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Edit Modal */}
+      {editing && (
+        <div style={{
+          position: "fixed", left: 0, top: 0, width: "100vw", height: "100vh",
+          background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            background: "#fff", padding: 32, borderRadius: 10, minWidth: 360, boxShadow: "0 3px 16px #0002"
+          }}>
+            <h3>Edit & Verify Client</h3>
+            <div style={{ marginBottom: 10 }}>
+              <label>Name:</label>
+              <input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} style={{ width: "100%" }} />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label>Email:</label>
+              <input value={editing.email} onChange={e => setEditing({ ...editing, email: e.target.value })} style={{ width: "100%" }} />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label>Client Code:</label>
+              <input value={editing.customer_id} onChange={e => setEditing({ ...editing, customer_id: e.target.value })} style={{ width: "100%" }} />
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <button onClick={saveEdit} style={{ background: colors.red, color: "#fff", borderRadius: 6, marginRight: 8 }} disabled={loading}>Save & Verify</button>
+              <button onClick={() => setEditing(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Message Modal */}
+      {messagePhone && (
+        <div style={{
+          position: "fixed", left: 0, top: 0, width: "100vw", height: "100vh",
+          background: "rgba(0,0,0,0.20)", display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            background: "#fff", padding: 28, borderRadius: 10, minWidth: 340
+          }}>
+            <h3>Send Security Check</h3>
+            <textarea value={messageText} onChange={e => setMessageText(e.target.value)} style={{ width: "100%", minHeight: 60, marginBottom: 12 }} />
+            <button onClick={() => sendMessage(messagePhone)} style={{ background: colors.red, color: "#fff", borderRadius: 6, marginRight: 8 }} disabled={loading}>Send</button>
+            <button onClick={() => setMessagePhone(null)}>Cancel</button>
+          </div>
+        </div>
       )}
     </div>
   );
