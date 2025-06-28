@@ -8,12 +8,12 @@ import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
 import LeadsPage from "./LeadsPage";
 import BroadcastPage from "./BroadcastPage";
-import AutoResponsePage from "./AutoResponsePage";
+import TemplatesPage from "./TemplatesPage"; // <-- NEW
 import OfficeHoursPage from "./OfficeHoursPage";
 import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import SendMessagePage from "./SendMessagePage";
-import ChatPanel from "./ChatPanel"; // <-- Import ChatPanel!
+import ChatPanel from "./ChatPanel";
 import "./App.css";
 
 const SECTION_TITLES: Record<string, string> = {
@@ -24,7 +24,7 @@ const SECTION_TITLES: Record<string, string> = {
   sales:      "Sales",
   leads:      "Leads",
   broadcast:  "Broadcast",
-  autoresp:   "Auto Response",
+  templates:  "Templates",           // <-- NEW
   office:     "Office Hours Management",
   system:     "System",
   send:       "Send Message",
@@ -148,7 +148,7 @@ export default function App() {
               sales:     <SalesPage            colors={c} darkMode={darkMode} />,
               leads:     <LeadsPage            colors={c} darkMode={darkMode} />,
               broadcast: <BroadcastPage        colors={c} darkMode={darkMode} />,
-              autoresp:  <AutoResponsePage     colors={c} />,
+              templates: <TemplatesPage        colors={c} darkMode={darkMode} />,  // <--- Added here
               office:    <OfficeHoursPage      colors={c} />,
               system:    <SystemPage           colors={c} />,
               send:      <SendMessagePage      colors={c} />,
