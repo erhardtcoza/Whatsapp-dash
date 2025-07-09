@@ -14,11 +14,16 @@ type Client = {
   Labels: string;
 };
 
-// Robust CSV parser: auto-detect tab or comma delimiter
+// Robust CSV parser: handles leading tab, quoting, and auto-detects tab/comma
 function parseCSV(text: string): Client[] {
   const lines = text.split("\n").filter(Boolean);
-  if (lines.length < 2) return [];
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  // Remove leading tab if present in each line
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i][0] === "\t") lines[i] = lines[i].slice(1);
+  }
+  // Detect delimiter
+  const delimiter = lines[0].includes("\t") ? "\t" : ",";
+  // Remove quotes from all headers
   const headers = lines[0].replace(/\r/g, '').split(delimiter).map(h => h.replace(/(^"|"$)/g, ''));
   return lines.slice(1).map(line => {
     const values = line.replace(/\r/g, '').split(delimiter).map(val => val.replace(/(^"|"$)/g, ''));
@@ -37,6 +42,8 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(false);
   // Search/filter state
   const [search, setSearch] = useState("");
+  // Debug: store failed rows for UI
+  const [failedRows, setFailedRows] = useState<{idx: number, reason: string, row: any}[]>([]);
 
   // Fetch clients on mount
   useEffect(() => {
@@ -66,6 +73,7 @@ export default function ClientsPage() {
     const file = files[0];
     setUploading(true);
     setStatus("Uploading...");
+    setFailedRows([]);
     const text = await file.text();
     const rows = parseCSV(text);
 
@@ -74,9 +82,13 @@ export default function ClientsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rows }),
     });
+
     if (res.ok) {
       const data = await res.json();
-      setStatus(`Upload successful: ${data.replaced} clients replaced.`);
+      setStatus(data.message || `Upload successful: ${data.replaced} clients replaced.`);
+      if (data.failed_rows && data.failed_rows.length) {
+        setFailedRows(data.failed_rows);
+      }
       // Optionally refresh clients list after upload
       setLoading(true);
       fetch("/api/clients")
@@ -101,7 +113,20 @@ export default function ClientsPage() {
         disabled={uploading}
         style={{ margin: "8px 0" }}
       />
-      {status && <div style={{ marginTop: 12, color: status.includes("success") ? "green" : "red" }}>{status}</div>}
+      {status && <div style={{ marginTop: 12, color: status.includes("success") ? "green" : (status.includes("failed") ? "red" : "orange") }}>{status}</div>}
+      {failedRows.length > 0 && (
+        <div style={{ marginTop: 14, color: "#e2001a", fontSize: 13 }}>
+          <b>Some rows failed to import:</b>
+          <ul>
+            {failedRows.map(r => (
+              <li key={r.idx}>
+                Row {r.idx}: {r.reason}
+                {/* Optionally: <pre>{JSON.stringify(r.row)}</pre> */}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div style={{ marginTop: 24, fontSize: 14, color: "#555" }}>
         <b>Required fields in CSV (comma or tab-delimited, headers):</b><br />
         Status, ID, Full name, Phone number, Street, ZIP code, City, Payment Method, Account balance, Labels
