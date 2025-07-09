@@ -14,12 +14,14 @@ type Client = {
   Labels: string;
 };
 
-// Simple CSV parser for tab-delimited files (returns array of Client)
+// Robust CSV parser: auto-detect tab or comma delimiter
 function parseCSV(text: string): Client[] {
   const lines = text.split("\n").filter(Boolean);
-  const headers = lines[0].replace(/\r/g, '').split("\t").map(h => h.replace(/(^"|"$)/g, ''));
+  if (lines.length < 2) return [];
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].replace(/\r/g, '').split(delimiter).map(h => h.replace(/(^"|"$)/g, ''));
   return lines.slice(1).map(line => {
-    const values = line.replace(/\r/g, '').split("\t").map(val => val.replace(/(^"|"$)/g, ''));
+    const values = line.replace(/\r/g, '').split(delimiter).map(val => val.replace(/(^"|"$)/g, ''));
     const obj: any = {};
     headers.forEach((h, i) => obj[h] = values[i] || "");
     return obj as Client;
@@ -101,7 +103,7 @@ export default function ClientsPage() {
       />
       {status && <div style={{ marginTop: 12, color: status.includes("success") ? "green" : "red" }}>{status}</div>}
       <div style={{ marginTop: 24, fontSize: 14, color: "#555" }}>
-        <b>Required fields in CSV (tab-delimited, headers):</b><br />
+        <b>Required fields in CSV (comma or tab-delimited, headers):</b><br />
         Status, ID, Full name, Phone number, Street, ZIP code, City, Payment Method, Account balance, Labels
       </div>
 
