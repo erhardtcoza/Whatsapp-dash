@@ -1,35 +1,39 @@
 import React, { useState, useEffect } from "react";
 
-// Simple CSV parser (works for simple CSVs, for advanced use PapaParse)
-function parseCSV(text) {
-  const lines = text.split("\n").filter(Boolean);
-  const headers = lines[0].replace(/\r/g, '').split("\t").map(h => h.replace(/(^"|"$)/g, ''));
-  return lines.slice(1).map(line => {
-    const values = line.replace(/\r/g, '').split("\t").map(val => val.replace(/(^"|"$)/g, ''));
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = values[i] || "");
-    return obj;
-  });
-}
+// ...parseCSV function as before
 
 export default function ClientsPage() {
-  // CSV Upload states
+  // CSV upload states
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState("");
 
-  // Client list/search states
+  // Data states
   const [clients, setClients] = useState([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fetch clients (with optional search)
+  // Local search state
+  const [search, setSearch] = useState("");
+
+  // Fetch clients (once, or you can trigger on search for server-side search)
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/clients?search=${encodeURIComponent(search)}`)
+    fetch("/api/clients")
       .then(res => res.json())
       .then(data => setClients(data))
       .finally(() => setLoading(false));
-  }, [search]);
+  }, []);
+
+  // Local filtering
+  const filteredClients = clients.filter(c => {
+    const q = search.toLowerCase();
+    return (
+      (c["Full name"] || "").toLowerCase().includes(q) ||
+      (c["Phone number"] || "").toLowerCase().includes(q) ||
+      (c.ID || "").toLowerCase().includes(q) ||
+      (c.Labels || "").toLowerCase().includes(q) ||
+      (c.City || "").toLowerCase().includes(q)
+    );
+  });
 
   // CSV upload logic (unchanged)
   async function handleCSVUpload(e) {
@@ -48,6 +52,7 @@ export default function ClientsPage() {
     if (res.ok) {
       const data = await res.json();
       setStatus(`Upload successful: ${data.replaced} clients replaced.`);
+      // Optionally refresh clients here
     } else {
       setStatus("Upload failed. Try again.");
     }
@@ -72,19 +77,22 @@ export default function ClientsPage() {
         Status, ID, Full name, Phone number, Street, ZIP code, City, Payment Method, Account balance, Labels
       </div>
 
-      {/* Client Search & Table */}
-      <hr style={{ margin: "32px 0 16px 0" }} />
-      <div>
+      {/* --- Search Input --- */}
+      <div style={{ margin: "30px 0 18px 0" }}>
         <input
           type="text"
-          placeholder="Search clients (name, phone, ID, label...)"
+          placeholder="Search clients (name, phone, ID, city, label...)"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: 320, marginBottom: 16, padding: 6 }}
+          style={{
+            width: 320, padding: 7, fontSize: 15, borderRadius: 6,
+            border: "1.2px solid #ddd"
+          }}
         />
-        {loading ? <div>Loading clients...</div> : null}
+        {loading && <span style={{ marginLeft: 15 }}>Loading clients...</span>}
       </div>
 
+      {/* --- Filtered Table --- */}
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
@@ -103,7 +111,7 @@ export default function ClientsPage() {
             </tr>
           </thead>
           <tbody>
-            {clients.map((c, i) => (
+            {filteredClients.map((c, i) => (
               <tr key={c.ID || i}>
                 <td>{c.Status}</td>
                 <td>{c.ID}</td>
@@ -117,11 +125,10 @@ export default function ClientsPage() {
                 <td>{c.Labels}</td>
                 <td>
                   <a href={`/clients/${c.ID}`}>View</a>
-                  {/* Extend with more actions if needed */}
                 </td>
               </tr>
             ))}
-            {(!clients || clients.length === 0) && !loading && (
+            {filteredClients.length === 0 && !loading && (
               <tr>
                 <td colSpan={11} style={{ textAlign: "center", color: "#888" }}>
                   No clients found.
