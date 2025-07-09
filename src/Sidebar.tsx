@@ -37,7 +37,9 @@ export default function Sidebar({
     null,
     { label: "Support", icon: "🛠️", key: "support" },
     null, null, null,
-    { label: "Templates", icon: "📝", key: "templates" }, // <---- Updated here
+    // --- Inserted Clients menu item here ---
+    { label: "Clients", icon: "👤", key: "clients" },
+    { label: "Templates", icon: "📝", key: "templates" },
     { label: "Office Hours", icon: "⏰", key: "office" },
     { label: "System", icon: "⚙️", key: "system" },
     ...(user.role === "admin" ? [{ label: "Add User", icon: "➕", key: "adduser" }] : []),
