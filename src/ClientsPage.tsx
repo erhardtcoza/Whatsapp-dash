@@ -57,10 +57,11 @@ export default function ClientsPage() {
     );
   });
 
-  // CSV upload handler
+  // CSV upload handler (TypeScript safe)
   async function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || !files[0]) return;
+    const file = files[0];
     setUploading(true);
     setStatus("Uploading...");
     const text = await file.text();
