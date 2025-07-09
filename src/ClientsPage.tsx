@@ -1,30 +1,52 @@
 import React, { useState, useEffect } from "react";
 
-// ...parseCSV function as before
+// Define the Client type to match your CSV/API structure
+type Client = {
+  Status: string;
+  ID: string;
+  "Full name": string;
+  "Phone number": string;
+  Street: string;
+  "ZIP code": string;
+  City: string;
+  "Payment Method": string;
+  "Account balance": string;
+  Labels: string;
+};
+
+// Simple CSV parser for tab-delimited files (returns array of Client)
+function parseCSV(text: string): Client[] {
+  const lines = text.split("\n").filter(Boolean);
+  const headers = lines[0].replace(/\r/g, '').split("\t").map(h => h.replace(/(^"|"$)/g, ''));
+  return lines.slice(1).map(line => {
+    const values = line.replace(/\r/g, '').split("\t").map(val => val.replace(/(^"|"$)/g, ''));
+    const obj: any = {};
+    headers.forEach((h, i) => obj[h] = values[i] || "");
+    return obj as Client;
+  });
+}
 
 export default function ClientsPage() {
   // CSV upload states
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState("");
-
-  // Data states
-  const [clients, setClients] = useState([]);
+  // Client data
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Local search state
+  // Search/filter state
   const [search, setSearch] = useState("");
 
-  // Fetch clients (once, or you can trigger on search for server-side search)
+  // Fetch clients on mount
   useEffect(() => {
     setLoading(true);
     fetch("/api/clients")
       .then(res => res.json())
-      .then(data => setClients(data))
+      .then((data: Client[]) => setClients(data))
       .finally(() => setLoading(false));
   }, []);
 
-  // Local filtering
-  const filteredClients = clients.filter(c => {
+  // Filter clients based on search input
+  const filteredClients = clients.filter((c) => {
     const q = search.toLowerCase();
     return (
       (c["Full name"] || "").toLowerCase().includes(q) ||
@@ -35,8 +57,8 @@ export default function ClientsPage() {
     );
   });
 
-  // CSV upload logic (unchanged)
-  async function handleCSVUpload(e) {
+  // CSV upload handler
+  async function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
@@ -52,7 +74,12 @@ export default function ClientsPage() {
     if (res.ok) {
       const data = await res.json();
       setStatus(`Upload successful: ${data.replaced} clients replaced.`);
-      // Optionally refresh clients here
+      // Optionally refresh clients list after upload
+      setLoading(true);
+      fetch("/api/clients")
+        .then(res => res.json())
+        .then((data: Client[]) => setClients(data))
+        .finally(() => setLoading(false));
     } else {
       setStatus("Upload failed. Try again.");
     }
@@ -77,13 +104,13 @@ export default function ClientsPage() {
         Status, ID, Full name, Phone number, Street, ZIP code, City, Payment Method, Account balance, Labels
       </div>
 
-      {/* --- Search Input --- */}
+      {/* Search Bar */}
       <div style={{ margin: "30px 0 18px 0" }}>
         <input
           type="text"
           placeholder="Search clients (name, phone, ID, city, label...)"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           style={{
             width: 320, padding: 7, fontSize: 15, borderRadius: 6,
             border: "1.2px solid #ddd"
@@ -92,7 +119,7 @@ export default function ClientsPage() {
         {loading && <span style={{ marginLeft: 15 }}>Loading clients...</span>}
       </div>
 
-      {/* --- Filtered Table --- */}
+      {/* Client Table */}
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
