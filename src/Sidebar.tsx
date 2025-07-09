@@ -37,7 +37,7 @@ export default function Sidebar({
     null,
     { label: "Support", icon: "🛠️", key: "support" },
     null, null, null,
-    // --- Inserted Clients menu item here ---
+    // --- Clients menu item ---
     { label: "Clients", icon: "👤", key: "clients" },
     { label: "Templates", icon: "📝", key: "templates" },
     { label: "Office Hours", icon: "⏰", key: "office" },
