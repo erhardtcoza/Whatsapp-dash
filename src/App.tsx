@@ -8,12 +8,13 @@ import AccountsPage from "./AccountsPage";
 import SalesPage from "./SalesPage";
 import LeadsPage from "./LeadsPage";
 import BroadcastPage from "./BroadcastPage";
-import TemplatesPage from "./TemplatesPage"; // <-- NEW
+import TemplatesPage from "./TemplatesPage";
 import OfficeHoursPage from "./OfficeHoursPage";
 import SystemPage from "./SystemPage";
 import AddUserPage from "./AddUserPage";
 import SendMessagePage from "./SendMessagePage";
 import ChatPanel from "./ChatPanel";
+import ClientsPage from "./ClientsPage";  // <-- STEP 1: Import your new page
 import "./App.css";
 
 const SECTION_TITLES: Record<string, string> = {
@@ -24,11 +25,12 @@ const SECTION_TITLES: Record<string, string> = {
   sales:      "Sales",
   leads:      "Leads",
   broadcast:  "Broadcast",
-  templates:  "Templates",           // <-- NEW
+  templates:  "Templates",
   office:     "Office Hours Management",
   system:     "System",
   send:       "Send Message",
   adduser:    "Add User",
+  clients:    "Clients",             // <-- STEP 2: Add Clients section title
 };
 
 export default function App() {
@@ -148,7 +150,7 @@ export default function App() {
               sales:     <SalesPage            colors={c} darkMode={darkMode} />,
               leads:     <LeadsPage            colors={c} darkMode={darkMode} />,
               broadcast: <BroadcastPage        colors={c} darkMode={darkMode} />,
-              templates: <TemplatesPage        colors={c} darkMode={darkMode} />,  // <--- Added here
+              templates: <TemplatesPage        colors={c} darkMode={darkMode} />,
               office:    <OfficeHoursPage      colors={c} />,
               system:    <SystemPage           colors={c} />,
               send:      <SendMessagePage      colors={c} />,
@@ -156,7 +158,8 @@ export default function App() {
                 ? <AddUserPage colors={c} />
                 : <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
                     You do not have access to this section.
-                  </div>
+                  </div>,
+              clients:   <ClientsPage />, // <-- STEP 3: Add your new Clients page here
             }[section] || (
               <div style={{ color: c.red, fontWeight: 700, padding: 48, textAlign: "center" }}>
                 Invalid section
