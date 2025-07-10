@@ -43,7 +43,7 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null);
   // Search/filter state
   const [search, setSearch] = useState("");
-  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false); // New: toggle for verified filter
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
   // Debug: store failed rows for UI
   const [failedRows, setFailedRows] = useState<{ idx: number; reason: string; row: any }[]>([]);
 
@@ -58,11 +58,16 @@ export default function ClientsPage() {
           headers: { "Accept": "application/json" },
         });
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+          const text = await res.text();
+          console.error("API response (non-JSON):", text); // Debug raw response
+          throw new Error(`HTTP ${res.status}: ${text || "Unknown error"}`);
         }
-        const data: Client[] = await res.json();
-        console.log("Fetched clients:", data); // Debug: inspect raw response
-        setClients(data);
+        const data = await res.json();
+        console.log("Fetched clients:", data); // Debug
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        setClients(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error("Error fetching clients:", err);
         setError(`Failed to load clients: ${err.message}`);
@@ -71,7 +76,7 @@ export default function ClientsPage() {
       }
     };
     fetchClients();
-  }, [showVerifiedOnly]); // Re-fetch when verified filter changes
+  }, [showVerifiedOnly]);
 
   // Filter clients based on search input
   const filteredClients = clients.filter((c) => {
@@ -102,7 +107,8 @@ export default function ClientsPage() {
         body: JSON.stringify({ rows }),
       });
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text || "Upload failed"}`);
       }
       const data = await res.json();
       setStatus(data.message || `Upload successful: ${data.replaced} clients replaced.`);
@@ -114,11 +120,13 @@ export default function ClientsPage() {
       const refreshRes = await fetch("/api/clients", {
         headers: { "Accept": "application/json" },
       });
-      if (refreshRes.ok) {
-        const refreshedData: Client[] = await refreshRes.json();
-        console.log("Refreshed clients:", refreshedData); // Debug
-        setClients(refreshedData);
+      if (!refreshRes.ok) {
+        const text = await refreshRes.text();
+        throw new Error(`HTTP ${refreshRes.status}: ${text || "Refresh failed"}`);
       }
+      const refreshedData = await refreshRes.json();
+      console.log("Refreshed clients:", refreshedData); // Debug
+      setClients(Array.isArray(refreshedData) ? refreshedData : []);
     } catch (err: any) {
       setStatus(`Upload failed: ${err.message}`);
     } finally {
