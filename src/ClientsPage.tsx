@@ -89,7 +89,66 @@ export default function ClientsPage() {
       (c.City?.toLowerCase()?.includes(q) || false)
     );
   });
+// ... (previous code unchanged)
 
+    // --- API: Upload clients via CSV/JSON ---
+    if (url.pathname === "/api/upload-clients" && request.method === "POST") {
+      try {
+        const data = await request.json();
+        const rows = data.rows || [];
+        let replaced = 0;
+        const failed_rows = [];
+
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          try {
+            // Validate required fields
+            if (!row["Phone number"] || !row.ID || !row["Full name"]) {
+              failed_rows.push({ idx: i + 1, reason: "Missing required fields: Phone number, ID, or Full name", row });
+              continue;
+            }
+            await env.DB.prepare(`
+              INSERT INTO customers (
+                phone, status, customer_id, name, street, zip_code, city, payment_method, balance, labels, verified
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+              ON CONFLICT(phone) DO UPDATE SET
+                status = excluded.status,
+                customer_id = excluded.customer_id,
+                name = excluded.name,
+                street = excluded.street,
+                zip_code = excluded.zip_code,
+                city = excluded.city,
+                payment_method = excluded.payment_method,
+                balance = excluded.balance,
+                labels = excluded.labels
+            `).bind(
+              row["Phone number"],
+              row.Status || null,
+              row.ID,
+              row["Full name"],
+              row.Street || null,
+              row["ZIP code"] || null,
+              row.City || null,
+              row["Payment Method"] || null,
+              row["Account balance"] ? parseFloat(row["Account balance"]) : null,
+              row.Labels || null
+            ).run();
+            replaced++;
+          } catch (error) {
+            console.error(`Error processing row ${i + 1}: ${error.message}`);
+            failed_rows.push({ idx: i + 1, reason: error.message, row });
+          }
+        }
+
+        const message = `Upload complete: ${replaced} clients replaced. ${failed_rows.length} row(s) failed.`;
+        return withCORS(Response.json({ replaced, failed_rows, message }));
+      } catch (error) {
+        console.error(`Error in upload-clients: ${error.message}`);
+        return withCORS(Response.json({ error: `Failed to upload clients: ${error.message}` }, { status: 500 }));
+      }
+    }
+
+    // ... (rest of the code unchanged)
   async function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || !files[0]) return;
