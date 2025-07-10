@@ -17,68 +17,68 @@ type Client = {
 // Robust CSV parser: handles leading tab, quoting, and auto-detects tab/comma
 function parseCSV(text: string): Client[] {
   const lines = text.split("\n").filter(Boolean);
-  // Remove leading tab if present in each line
   for (let i = 0; i < lines.length; i++) {
     if (lines[i][0] === "\t") lines[i] = lines[i].slice(1);
   }
-  // Detect delimiter
   const delimiter = lines[0].includes("\t") ? "\t" : ",";
-  // Remove quotes from all headers
   const headers = lines[0].replace(/\r/g, '').split(delimiter).map(h => h.replace(/(^"|"$)/g, ''));
   return lines.slice(1).map(line => {
     const values = line.replace(/\r/g, '').split(delimiter).map(val => val.replace(/(^"|"$)/g, ''));
     const obj: any = {};
-    headers.forEach((h, i) => obj[h] = values[i] || null); // Use null for empty values
+    headers.forEach((h, i) => obj[h] = values[i] || null);
     return obj as Client;
   });
 }
 
 export default function ClientsPage() {
-  // CSV upload states
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState("");
-  // Client data
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Search/filter state
   const [search, setSearch] = useState("");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
-  // Debug: store failed rows for UI
   const [failedRows, setFailedRows] = useState<{ idx: number; reason: string; row: any }[]>([]);
 
-  // Fetch clients on mount and when verified filter changes
-  useEffect(() => {
-    const fetchClients = async () => {
-      setLoading(true);
-      setError(null);
+  // Fetch clients with retry logic
+  const fetchClients = async (retries = 3, delay = 1000) => {
+    setLoading(true);
+    setError(null);
+    for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const url = showVerifiedOnly ? "/api/clients?verified=1" : "/api/clients";
         const res = await fetch(url, {
-          headers: { "Accept": "application/json" },
+          headers: { "Accept": "application/json", "Cache-Control": "no-cache" },
         });
+        console.log(`Fetch attempt ${attempt}: Status ${res.status}, Content-Type: ${res.headers.get("Content-Type")}`);
         if (!res.ok) {
           const text = await res.text();
-          console.error("API response (non-JSON):", text); // Debug raw response
+          console.error(`API response (non-JSON, attempt ${attempt}):`, text);
           throw new Error(`HTTP ${res.status}: ${text || "Unknown error"}`);
         }
         const data = await res.json();
-        console.log("Fetched clients:", data); // Debug
+        console.log(`Fetched clients (attempt ${attempt}):`, data);
         if (data.error) {
           throw new Error(data.error);
         }
         setClients(Array.isArray(data) ? data : []);
+        return; // Success, exit retry loop
       } catch (err: any) {
-        console.error("Error fetching clients:", err);
-        setError(`Failed to load clients: ${err.message}`);
-      } finally {
-        setLoading(false);
+        console.error(`Error fetching clients (attempt ${attempt}):`, err);
+        if (attempt === retries) {
+          setError(`Failed to load clients after ${retries} attempts: ${err.message}`);
+        } else {
+          await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retry
+        }
       }
-    };
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchClients();
   }, [showVerifiedOnly]);
 
-  // Filter clients based on search input
   const filteredClients = clients.filter((c) => {
     const q = search.toLowerCase();
     return (
@@ -90,7 +90,6 @@ export default function ClientsPage() {
     );
   });
 
-  // CSV upload handler
   async function handleCSVUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || !files[0]) return;
@@ -115,29 +114,16 @@ export default function ClientsPage() {
       if (data.failed_rows?.length) {
         setFailedRows(data.failed_rows);
       }
-      // Refresh clients list
-      setLoading(true);
-      const refreshRes = await fetch("/api/clients", {
-        headers: { "Accept": "application/json" },
-      });
-      if (!refreshRes.ok) {
-        const text = await refreshRes.text();
-        throw new Error(`HTTP ${refreshRes.status}: ${text || "Refresh failed"}`);
-      }
-      const refreshedData = await refreshRes.json();
-      console.log("Refreshed clients:", refreshedData); // Debug
-      setClients(Array.isArray(refreshedData) ? refreshedData : []);
+      await fetchClients(); // Refresh clients list
     } catch (err: any) {
       setStatus(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
-      setLoading(false);
     }
   }
 
   return (
     <div style={{ padding: 24 }}>
-      {/* CSV Upload Section */}
       <h2>Clients</h2>
       <label style={{ fontWeight: "bold" }}>Update clients by uploading CSV:</label>
       <input
@@ -159,7 +145,6 @@ export default function ClientsPage() {
             {failedRows.map(r => (
               <li key={r.idx}>
                 Row {r.idx}: {r.reason}
-                {/* Uncomment to debug row data: <pre>{JSON.stringify(r.row, null, 2)}</pre> */}
               </li>
             ))}
           </ul>
@@ -170,7 +155,6 @@ export default function ClientsPage() {
         Status, ID, Full name, Phone number, Street, ZIP code, City, Payment Method, Account balance, Labels
       </div>
 
-      {/* Verified Filter Toggle */}
       <div style={{ marginTop: 16 }}>
         <label>
           <input
@@ -182,7 +166,6 @@ export default function ClientsPage() {
         </label>
       </div>
 
-      {/* Search Bar */}
       <div style={{ margin: "30px 0 18px 0" }}>
         <input
           type="text"
@@ -201,7 +184,6 @@ export default function ClientsPage() {
         {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
       </div>
 
-      {/* Client Table */}
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
@@ -240,7 +222,7 @@ export default function ClientsPage() {
             {filteredClients.length === 0 && !loading && (
               <tr>
                 <td colSpan={11} style={{ textAlign: "center", color: "#888" }}>
-                  {error ? 'Error loading clients.' : 'No clients found.'}
+                  {error ? 'Error loading clients. Please try refreshing.' : 'No clients found.'}
                 </td>
               </tr>
             )}
